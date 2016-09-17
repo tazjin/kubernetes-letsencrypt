@@ -11,9 +11,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <mainClass>in.tazj.k8s.eip.Main</mainClass>
-    <!-- Overridable git hash which should be passed in from the command line.
-         Example: mvn build -Decr.gitHash=$(git rev-parse HEAD) -->
-    <docker.image>tazjin/k8s-letsencrypt-controller:${project.version}</docker.image>
+    <docker.image>tazjin/letsencrypt-controller:${project.version}</docker.image>
   </properties>
 
   <!-- Complete build configuration for building a shaded JAR and storing it in a Docker image.
