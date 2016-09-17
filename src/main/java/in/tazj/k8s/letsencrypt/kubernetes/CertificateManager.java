@@ -29,12 +29,6 @@ public class CertificateManager {
 
   /** Insert a specified certificate in the Kubernetes cluster. */
   public Secret insertCertificate(String certificateName, Map<String, String> files) {
-    /*final Optional<Secret> currentSecret = getCertificate(certificateName);
-    if (currentSecret.isPresent()) {
-      log.info("Updating of certificates not yet implemented");
-      throw new LetsencryptException("NYI");
-    }*/
-
     final Secret secret = client.secrets().inNamespace("default")
         .createNew()
         .withNewMetadata()
@@ -42,7 +36,7 @@ public class CertificateManager {
         .endMetadata()
         .withData(files)
         .done();
-
+    log.info("Inserted certificate {} into cluster", certificateName);
     return secret;
   }
 }
