@@ -1,5 +1,7 @@
 package in.tazj.k8s.letsencrypt;
 
+import in.tazj.k8s.letsencrypt.acme.CertificateRequestHandler;
+import in.tazj.k8s.letsencrypt.acme.Route53Responder;
 import in.tazj.k8s.letsencrypt.kubernetes.CertificateManager;
 import in.tazj.k8s.letsencrypt.kubernetes.KeyPairManager;
 import in.tazj.k8s.letsencrypt.kubernetes.ServiceWatcher;
@@ -17,7 +19,11 @@ public class Main {
     final KubernetesClient client = new DefaultKubernetesClient();
     final CertificateManager certificateManager = new CertificateManager(client);
     final KeyPairManager keyPairManager = KeyPairManager.with(client);
-    final ServiceWatcher watcher = new ServiceWatcher(certificateManager, keyPairManager);
+    final String acmeUrl = "https://acme-staging.api.letsencrypt.org/directory";
+    final CertificateRequestHandler requestHandler =
+            new CertificateRequestHandler(acmeUrl, keyPairManager, new Route53Responder());
+
+    final ServiceWatcher watcher = new ServiceWatcher(certificateManager, requestHandler);
 
     /* Run all existing services through the watcher */
     client.services().list().getItems().forEach(service ->

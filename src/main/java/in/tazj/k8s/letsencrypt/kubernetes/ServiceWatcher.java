@@ -1,8 +1,8 @@
 package in.tazj.k8s.letsencrypt.kubernetes;
 
-import java.security.KeyPair;
 import java.util.Map;
 
+import in.tazj.k8s.letsencrypt.acme.CertificateRequestHandler;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.Watcher;
@@ -15,11 +15,12 @@ import lombok.extern.slf4j.Slf4j;
 public class ServiceWatcher implements Watcher<Service> {
   final private String ANNOTATION = "acme/certificate";
   final private CertificateManager certificateManager;
-  final private KeyPairManager keyPairManager;
+  final private CertificateRequestHandler requestHandler;
 
-  public ServiceWatcher(CertificateManager certificateManager, KeyPairManager keyPairManager) {
+  public ServiceWatcher(CertificateManager certificateManager,
+                        CertificateRequestHandler requestHandler) {
     this.certificateManager = certificateManager;
-    this.keyPairManager = keyPairManager;
+    this.requestHandler = requestHandler;
   }
 
   @Override
@@ -48,13 +49,8 @@ public class ServiceWatcher implements Watcher<Service> {
       log.info("Service {} requesting certificate {}",
           service.getMetadata().getName(), certificateName);
 
-      requestCertificate(certificateName);
+      requestHandler.requestCertificate(certificateName);
     }
-  }
-
-  private void requestCertificate(String certificateName) {
-    final KeyPair keyPair = keyPairManager.getKeyPair();
-
   }
 
   /** Checks if a given service resource is requesting a Letsencrypt certificate. */
