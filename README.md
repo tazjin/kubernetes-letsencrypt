@@ -15,3 +15,4 @@ account used to retrieve the certificates.
 * Use a third-party resource instead of service annotations
 * Implement Google Cloud DNS support
 * Detect cloud automatically
+* Support different namespaces (currently everything is in default)
