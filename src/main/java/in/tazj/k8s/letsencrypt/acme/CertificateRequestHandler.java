@@ -3,6 +3,9 @@ package in.tazj.k8s.letsencrypt.acme;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.BaseEncoding;
 
+import net.jodah.failsafe.Failsafe;
+import net.jodah.failsafe.RetryPolicy;
+
 import org.shredzone.acme4j.Authorization;
 import org.shredzone.acme4j.Certificate;
 import org.shredzone.acme4j.Registration;
@@ -21,9 +24,9 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.security.KeyPair;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import in.tazj.k8s.letsencrypt.kubernetes.KeyPairManager;
-import in.tazj.k8s.letsencrypt.util.DnsRecordObserver;
 import in.tazj.k8s.letsencrypt.util.LetsencryptException;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +40,12 @@ public class CertificateRequestHandler {
   final private String acmeServer;
   final private KeyPairManager keyPairManager;
   final private DnsResponder dnsResponder;
+  final private RetryPolicy challengeRetryPolicy = new RetryPolicy()
+      .retryWhen(Status.PROCESSING)
+      .retryWhen(Status.PENDING)
+      .abortWhen(Status.INVALID)
+      .withBackoff(1, 30, TimeUnit.SECONDS)
+      .withMaxDuration(10, TimeUnit.MINUTES);
 
   public CertificateRequestHandler(String acmeServer, KeyPairManager keyPairManager, DnsResponder dnsResponder) {
     this.acmeServer = acmeServer;
@@ -52,7 +61,7 @@ public class CertificateRequestHandler {
       final Challenge challenge = prepareDnsChallenge(authorization);
       completeChallenge(challenge);
       return generateSignCertificate(domain, registration);
-    } catch (AcmeException | InterruptedException | IOException e) {
+    } catch (AcmeException | IOException e) {
       throw new LetsencryptException(e.getMessage());
     }
   }
@@ -87,20 +96,20 @@ public class CertificateRequestHandler {
     return base64.encode(writer.toString().getBytes("UTF-8"));
   }
 
-  private void completeChallenge(Challenge challenge) throws AcmeException, InterruptedException {
-    int attempts = 10;
+  /** Attempt to validate the LetsEncrypt challenge with the retry policy specified above.
+   * If the challenge does not complete within 10 minutes it is assumed to have failed and an
+   * exception will be thrown. */
+  private void completeChallenge(Challenge challenge) throws AcmeException {
     challenge.trigger();
 
-    while (challenge.getStatus() != Status.VALID && attempts > 0) {
-      Thread.sleep(3000);
-      challenge.update();
-      attempts--;
-    }
-
-    if (challenge.getStatus() != Status.VALID) {
-      log.error("Challenge failed, giving up.");
-      throw new LetsencryptException("Challenge failed!");
-    }
+    Failsafe.with(challengeRetryPolicy)
+        .get(ctx -> {
+          log.info("Current challenge status: {}", challenge.getStatus()); // TODO: remove
+          log.info("Challenge validation attempt {} for challenge {}",
+              ctx.getExecutions(), challenge.getLocation());
+          challenge.update();
+          return challenge.getStatus();
+        });
   }
 
   /** Creates a DNS challenge and calls the DNS responder with the challenge data.
@@ -113,14 +122,8 @@ public class CertificateRequestHandler {
       throw new LetsencryptException("Received no challenge");
     }
 
-    final String challengeDomain = "_acme-challenge." + authorization.getDomain();
-    dnsResponder.addChallengeRecord(challengeDomain, dns01Challenge.getDigest());
-
-    // This will wait until the challenge record has become visible. Automatically times out after
-    // 15 minutes.
-    final DnsRecordObserver observer =
-        new DnsRecordObserver(challengeDomain, authorization.getDomain(), dns01Challenge.getDigest());
-    observer.observeDns();
+    final String challengeRecord = "_acme-challenge." + authorization.getDomain();
+    dnsResponder.addChallengeRecord(challengeRecord, dns01Challenge.getDigest());
 
     return dns01Challenge;
   }
