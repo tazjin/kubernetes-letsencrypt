@@ -75,17 +75,5 @@ mvn package
 mvn -Ddocker.imageName='your/image-name' docker:build docker:push
 ```
 
-## TODO
-
-* Watch created secrets and renew automatically
-* Use a third-party resource instead of service annotations
-* Implement Google Cloud DNS support
-* Detect cloud automatically
-* Support different namespaces (currently everything is in default)
-* Add unit tests (>.<)
-* Set up Travis.CI
-* Deal with license agreement updates
-* Migrate this list to Github issues
-
 [kube2iam]: https://github.com/jtblin/kube2iam
 [mount these]: http://kubernetes.io/docs/user-guide/secrets/#using-secrets-as-files-from-a-pod
