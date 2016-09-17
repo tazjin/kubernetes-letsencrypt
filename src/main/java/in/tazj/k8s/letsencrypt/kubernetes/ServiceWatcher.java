@@ -70,6 +70,7 @@ public class ServiceWatcher implements Watcher<Service> {
 
   @Override
   public void onClose(KubernetesClientException e) {
-
+    log.error("Lost connection to Kubernetes master: {}", e);
+    System.exit(-1);
   }
 }
