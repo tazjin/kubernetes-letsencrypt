@@ -28,7 +28,7 @@ public class Route53Responder implements DnsResponder {
   final AmazonRoute53 route53 = new AmazonRoute53Client(new DefaultAWSCredentialsProviderChain());
 
   @Override
-  public void addChallengeRecord(String recordName, String challengeDigest) {
+  public String addChallengeRecord(String recordName, String challengeDigest) {
     final Optional<HostedZone> hostedZone = findHostedZone(recordName);
 
     if (hostedZone.isPresent()) {
@@ -43,6 +43,7 @@ public class Route53Responder implements DnsResponder {
           new Change(ChangeAction.UPSERT, recordSet)));
 
       route53.changeResourceRecordSets(new ChangeResourceRecordSetsRequest(zoneId, changeBatch));
+      return hostedZone.get().getName();
     } else {
       log.error("No hosted zone found for record: {}!", recordName);
       throw new LetsencryptException("No hosted zone found");
