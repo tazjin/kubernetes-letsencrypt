@@ -134,6 +134,10 @@ public class CertificateRequestHandler {
 
     try {
       registration = new RegistrationBuilder().create(session);
+      final URI agreementUri = registration.getAgreement();
+      log.info("Agreeing to Letsencrypt subscriber agreement. "
+          + "Terms are available at {}", agreementUri);
+      registration.modify().setAgreement(agreementUri).commit();
       log.info("Created new ACME user, URI: {}", registration.getLocation());
     } catch (AcmeConflictException e) {
       registration = Registration.bind(session, e.getLocation());
