@@ -43,13 +43,15 @@ public class ServiceWatcher implements Watcher<Service> {
 
   private void handleCertificateRequest(Service service) {
     final String certificateName = service.getMetadata().getAnnotations().get(ANNOTATION);
-    final String secretName = certificateName.replace('.', '-');
+    final String secretName = certificateName.replace('.', '-') + "-tls";
 
     if (!certificateManager.getCertificate(secretName).isPresent()) {
       log.info("Service {} requesting certificate {}",
           service.getMetadata().getName(), certificateName);
 
-      requestHandler.requestCertificate(certificateName);
+      final Map<String, String> certificateFiles =
+          requestHandler.requestCertificate(certificateName);
+      certificateManager.insertCertificate(secretName, certificateFiles);
     }
   }
 
