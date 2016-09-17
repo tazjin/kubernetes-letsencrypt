@@ -28,15 +28,17 @@ public class Route53Responder implements DnsResponder {
   final AmazonRoute53 route53 = new AmazonRoute53Client(new DefaultAWSCredentialsProviderChain());
 
   @Override
-  public void addChallengeRecord(String recordName, String challengeText) {
+  public void addChallengeRecord(String recordName, String challengeDigest) {
     final Optional<HostedZone> hostedZone = findHostedZone(recordName);
 
     if (hostedZone.isPresent()) {
-      log.info("Creating record {} in zone {}", recordName, hostedZone.get().getName());
       final String zoneId = hostedZone.get().getId();
+      final String recordValue = formatChallengeValue(challengeDigest);
+      log.info("Creating record {} in zone {} with value {}",
+          recordName, hostedZone.get().getName(), recordValue);
       final ResourceRecordSet recordSet = new ResourceRecordSet(recordName, RRType.TXT)
-          .withTTL(300L)
-          .withResourceRecords(new ResourceRecord(challengeText));
+          .withTTL(60L)
+          .withResourceRecords(new ResourceRecord(recordValue));
       final ChangeBatch changeBatch = new ChangeBatch(ImmutableList.of(
           new Change(ChangeAction.UPSERT, recordSet)));
 
@@ -75,5 +77,14 @@ public class Route53Responder implements DnsResponder {
         log.info("Found matching zone {} for record {}", zone.getName(), record));
 
     return matchingZone;
+  }
+
+  // Route53 requires TXT record values to be explicitly enclosed in quotation marks.
+  private static String formatChallengeValue(String challenge) {
+    if (challenge.endsWith("\"")) {
+      return challenge;
+    } else {
+      return "\"" + challenge + "\"";
+    }
   }
 }
