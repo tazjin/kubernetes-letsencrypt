@@ -11,7 +11,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <mainClass>in.tazj.k8s.letsencrypt.Main</mainClass>
-    <docker.image>tazjin/letsencrypt-controller:${project.version}</docker.image>
+    <docker.imageName>tazjin/letsencrypt-controller</docker.imageName>
+    <docker.image>${docker.imageName}:${project.version}</docker.image>
   </properties>
 
   <!-- Complete build configuration for building a shaded JAR and storing it in a Docker image.
