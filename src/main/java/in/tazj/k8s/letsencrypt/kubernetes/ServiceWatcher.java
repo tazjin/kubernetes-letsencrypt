@@ -28,12 +28,12 @@ public class ServiceWatcher implements Watcher<Service> {
     switch (action) {
       case ADDED:
         if (isCertificateRequest(service)) {
-          handleCertificateRequest(service);
+          new Thread(() -> handleCertificateRequest(service)).start();
         }
         break;
       case MODIFIED:
         if (isCertificateRequest(service)) {
-          handleCertificateRequest(service);
+          new Thread(() -> handleCertificateRequest(service)).start();
         }
         break;
       default:
