@@ -106,7 +106,7 @@
     </dependency>
     <dependency>
       <groupId>com.amazonaws</groupId>
-      <artifactId>aws-java-sdk</artifactId>
+      <artifactId>aws-java-sdk-route53</artifactId>
       <version>1.11.33</version>
     </dependency>
     <dependency>
