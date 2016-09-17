@@ -1,6 +1,8 @@
 Kubernetes Letsencrypt Controller
 =================================
 
+[![Build Status](https://travis-ci.org/tazjin/kubernetes-letsencrypt.svg?branch=master)](https://travis-ci.org/tazjin/kubernetes-letsencrypt)
+
 This implements a Kubernetes controller that automatically requests and refreshes 
 Letsencrypt certificates based on service annotations.
 
