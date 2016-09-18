@@ -49,11 +49,18 @@ public class CloudDnsResponder implements DnsResponder {
 
   @SneakyThrows
   private void waitForUpdate(ChangeRequest result) {
-    log.info("Waiting for change in zone {} to finish", result.zone());
+    log.info("Waiting for change in zone {} to finish. This may take some time.", result.zone());
     while (result.status().equals(PENDING)) {
       Thread.sleep(500);
       result = dns.getChangeRequest(result.zone(), result.generatedId());
     }
+
+    // Cloud DNS sometimes takes a while even after propagation has been confirmed.
+    // The DNS observer queries all nameservers for the zone, however we sometimes see records still
+    // being incorrect. Presumably something on Google's backend is eventually consistent.
+    // With the below sleep timer the challenge will *usually* succeed. In some cases it may take a
+    // few attempts.
+    Thread.sleep(60 * 1000);
   }
 
   private ChangeRequest updateCloudDnsRecord(Zone zone, String recordName, String challengeDigest) {
