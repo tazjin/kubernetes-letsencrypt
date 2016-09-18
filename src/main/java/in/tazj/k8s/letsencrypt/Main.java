@@ -19,7 +19,8 @@ public class Main {
     final KubernetesClient client = new DefaultKubernetesClient();
     final CertificateManager certificateManager = new CertificateManager(client);
     final KeyPairManager keyPairManager = KeyPairManager.with(client);
-    final String acmeUrl = "https://acme-staging.api.letsencrypt.org/directory";
+    final String acmeUrl = "https://acme-v01.api.letsencrypt.org/directory";
+
     final CertificateRequestHandler requestHandler =
             new CertificateRequestHandler(acmeUrl, keyPairManager, new Route53Responder());
 

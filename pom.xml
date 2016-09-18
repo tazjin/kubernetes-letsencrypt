@@ -6,7 +6,7 @@
 
   <artifactId>letsencrypt-controller</artifactId>
   <groupId>in.tazj.k8s</groupId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0</version>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
