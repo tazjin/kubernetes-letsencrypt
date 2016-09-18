@@ -57,12 +57,12 @@ public class CloudDnsResponder implements DnsResponder {
   }
 
   private ChangeRequest updateCloudDnsRecord(Zone zone, String recordName, String challengeDigest) {
-    val recordSet = RecordSet.builder(recordName, Type.TXT)
+    val fqdnRecord = determineFqdnRecord(recordName);
+    val recordSet = RecordSet.builder(fqdnRecord, Type.TXT)
         .ttl(1, TimeUnit.MINUTES)
         .addRecord(challengeDigest)
         .build();
-
-    val changeBuilder = ChangeRequestInfo.builder().add(recordSet);
+    val changeBuilder = ChangeRequestInfo.builder();
 
     // Verify there is no existing record / overwrite it if there is.
     Iterator<RecordSet> recordSetIterator = zone.listRecordSets().iterateAll();
@@ -73,6 +73,8 @@ public class CloudDnsResponder implements DnsResponder {
         changeBuilder.delete(current);
       }
     }
+
+    changeBuilder.add(recordSet);
 
     return zone.applyChangeRequest(changeBuilder.build());
   }
