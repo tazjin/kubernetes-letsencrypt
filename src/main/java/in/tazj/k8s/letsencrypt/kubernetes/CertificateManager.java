@@ -3,7 +3,6 @@ package in.tazj.k8s.letsencrypt.kubernetes;
 import java.util.Map;
 import java.util.Optional;
 
-import in.tazj.k8s.letsencrypt.util.LetsencryptException;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.extern.slf4j.Slf4j;
@@ -19,17 +18,19 @@ public class CertificateManager {
     this.client = client;
   }
 
-  public Optional<Secret> getCertificate(String certificateName) {
+  public Optional<Secret> getCertificate(String namespace, String certificateName) {
     // TODO: .get() returns null but .list() works, not sure why yet.
-    final Optional<Secret> secret = client.secrets().list().getItems().stream()
+    final Optional<Secret> secret = client.secrets().inNamespace(namespace)
+        .list().getItems().stream()
         .filter(s -> s.getMetadata().getName().equals(certificateName))
         .findFirst();
     return secret;
   }
 
   /** Insert a specified certificate in the Kubernetes cluster. */
-  public Secret insertCertificate(String certificateName, Map<String, String> files) {
-    final Secret secret = client.secrets().inNamespace("default")
+  public Secret insertCertificate(String namespace, String certificateName,
+                                  Map<String, String> files) {
+    final Secret secret = client.secrets().inNamespace(namespace)
         .createNew()
         .withNewMetadata()
           .withName(certificateName)

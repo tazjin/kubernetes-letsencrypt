@@ -55,7 +55,7 @@ public class DnsRecordObserver {
       lookup.setResolver(new SimpleResolver(nameserver));
 
       while (dateTime.plus(observerTimeout).isAfterNow()) {
-        log.info("Looking up {} in {}", recordName, nameserver);
+        log.debug("Looking up {} in {}", recordName, nameserver);
         lookup.setCache(new Cache());
 
         final Record[] records = lookup.run();

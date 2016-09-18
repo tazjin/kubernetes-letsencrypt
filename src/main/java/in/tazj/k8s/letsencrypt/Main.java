@@ -10,16 +10,16 @@ import in.tazj.k8s.letsencrypt.acme.DnsResponder;
 import in.tazj.k8s.letsencrypt.acme.Route53Responder;
 import in.tazj.k8s.letsencrypt.kubernetes.CertificateManager;
 import in.tazj.k8s.letsencrypt.kubernetes.KeyPairManager;
-import in.tazj.k8s.letsencrypt.kubernetes.ServiceWatcher;
+import in.tazj.k8s.letsencrypt.kubernetes.NamespaceManager;
 import in.tazj.k8s.letsencrypt.util.EnvironmentalConfiguration.Configuration;
 import in.tazj.k8s.letsencrypt.util.LetsencryptException;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.Watcher;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import static in.tazj.k8s.letsencrypt.util.EnvironmentalConfiguration.loadConfiguration;
+import static io.fabric8.kubernetes.client.Watcher.Action.ADDED;
 
 /**
  * Run the certificate controller and watch service objects.
@@ -29,36 +29,21 @@ public class Main {
   final static private KubernetesClient client = new DefaultKubernetesClient();
 
   public static void main(String[] args) {
-    final Configuration configuration = loadConfiguration();
-    final DnsResponder dnsResponder = getCorrectDnsResponder(configuration);
-    final CertificateManager certificateManager = new CertificateManager(client);
-    final KeyPairManager keyPairManager = KeyPairManager.with(client);
-    final CertificateRequestHandler requestHandler =
-        new CertificateRequestHandler(configuration.getAcmeUrl(), keyPairManager, dnsResponder);
+    val config = loadConfiguration();
+    val dnsResponder = getCorrectDnsResponder(config);
+    val certificateManager = new CertificateManager(client);
+    val keyPairManager = KeyPairManager.with(client);
+    val requestHandler =
+        new CertificateRequestHandler(config.getAcmeUrl(), keyPairManager, dnsResponder);
+    val namespaceManager = new NamespaceManager(client, certificateManager, requestHandler);
 
-    final ServiceWatcher watcher = new ServiceWatcher(certificateManager, requestHandler);
+    /* Add all currently existing services to namespace manager */
+    client.namespaces().list().getItems().stream().forEach(namespace -> {
+      namespaceManager.eventReceived(ADDED, namespace);
+    });
 
-    /* Start reconciliation loop */
-    new Thread(() -> reconcile(watcher)).start();
-
-    /* Start watching new service events */
-    client.services().watch(watcher);
-  }
-
-  /** Run a reconciliation loop every five minutes. */
-  public static void reconcile(ServiceWatcher watcher) {
-    /* Run all existing services through the watcher */
-    client.services().list().getItems().forEach(service ->
-        watcher.eventReceived(Watcher.Action.ADDED, service));
-
-    try {
-      Thread.sleep(5 * 60 * 1000);
-    } catch (InterruptedException e) {
-      log.error("Reconciliation loop was interrupted. {}", e.getMessage());
-      System.exit(-1);
-    }
-
-    reconcile(watcher);
+    /* Start watching namespace events */
+    client.namespaces().watch(namespaceManager);
   }
 
   /* Detects the correct cloud platform and returns an appropriate DNS responder. */
