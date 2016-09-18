@@ -1,6 +1,10 @@
 package in.tazj.k8s.letsencrypt;
 
+import com.amazonaws.services.route53.AmazonRoute53;
+import com.amazonaws.services.route53.AmazonRoute53Client;
+
 import in.tazj.k8s.letsencrypt.acme.CertificateRequestHandler;
+import in.tazj.k8s.letsencrypt.acme.DnsResponder;
 import in.tazj.k8s.letsencrypt.acme.Route53Responder;
 import in.tazj.k8s.letsencrypt.kubernetes.CertificateManager;
 import in.tazj.k8s.letsencrypt.kubernetes.KeyPairManager;
@@ -20,9 +24,10 @@ public class Main {
   public static void main(String[] args) {
     final CertificateManager certificateManager = new CertificateManager(client);
     final KeyPairManager keyPairManager = KeyPairManager.with(client);
-    final String acmeUrl = "https://acme-staging.api.letsencrypt.org/directory";
+    final String acmeUrl = "https://acme-v01.api.letsencrypt.org/directory";
+    final DnsResponder dnsResponder = getCorrectDnsResponder();
     final CertificateRequestHandler requestHandler =
-            new CertificateRequestHandler(acmeUrl, keyPairManager, new Route53Responder());
+        new CertificateRequestHandler(acmeUrl, keyPairManager, dnsResponder);
 
     final ServiceWatcher watcher = new ServiceWatcher(certificateManager, requestHandler);
 
@@ -47,5 +52,13 @@ public class Main {
     }
 
     reconcile(watcher);
+  }
+
+  /* Detects the correct cloud platform and returns an appropriate DNS responder. */
+  private static DnsResponder getCorrectDnsResponder() {
+    // Only Amazon Route53 is supported right now so we always return that.
+    final AmazonRoute53 route53 = new AmazonRoute53Client();
+    final Route53Responder responder = new Route53Responder(route53);
+    return responder;
   }
 }

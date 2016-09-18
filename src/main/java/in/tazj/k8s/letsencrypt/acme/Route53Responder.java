@@ -28,7 +28,11 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class Route53Responder implements DnsResponder {
-  final AmazonRoute53 route53 = new AmazonRoute53Client(new DefaultAWSCredentialsProviderChain());
+  final AmazonRoute53 route53;
+
+  public Route53Responder(AmazonRoute53 route53) {
+    this.route53 = route53;
+  }
 
   @Override
   public String addChallengeRecord(String recordName, String challengeDigest) {
