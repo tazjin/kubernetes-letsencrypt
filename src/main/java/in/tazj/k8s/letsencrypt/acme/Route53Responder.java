@@ -9,7 +9,9 @@ import com.amazonaws.services.route53.AmazonRoute53Client;
 import com.amazonaws.services.route53.model.Change;
 import com.amazonaws.services.route53.model.ChangeAction;
 import com.amazonaws.services.route53.model.ChangeBatch;
+import com.amazonaws.services.route53.model.ChangeInfo;
 import com.amazonaws.services.route53.model.ChangeResourceRecordSetsRequest;
+import com.amazonaws.services.route53.model.GetChangeRequest;
 import com.amazonaws.services.route53.model.HostedZone;
 import com.amazonaws.services.route53.model.RRType;
 import com.amazonaws.services.route53.model.ResourceRecord;
@@ -18,6 +20,7 @@ import com.amazonaws.services.route53.model.ResourceRecordSet;
 import java.util.Optional;
 
 import in.tazj.k8s.letsencrypt.util.LetsencryptException;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -32,21 +35,36 @@ public class Route53Responder implements DnsResponder {
     final Optional<HostedZone> hostedZone = findHostedZone(recordName);
 
     if (hostedZone.isPresent()) {
-      final String zoneId = hostedZone.get().getId();
-      final String recordValue = formatChallengeValue(challengeDigest);
-      log.info("Creating record {} in zone {} with value {}",
-          recordName, hostedZone.get().getName(), recordValue);
-      final ResourceRecordSet recordSet = new ResourceRecordSet(recordName, RRType.TXT)
-          .withTTL(60L)
-          .withResourceRecords(new ResourceRecord(recordValue));
-      final ChangeBatch changeBatch = new ChangeBatch(ImmutableList.of(
-          new Change(ChangeAction.UPSERT, recordSet)));
-
-      route53.changeResourceRecordSets(new ChangeResourceRecordSetsRequest(zoneId, changeBatch));
+      updateRoute53Record(hostedZone.get(), recordName, challengeDigest);
       return hostedZone.get().getName();
     } else {
       log.error("No hosted zone found for record: {}!", recordName);
       throw new LetsencryptException("No hosted zone found");
+    }
+  }
+
+  @SneakyThrows // Ignore InterruptedException
+  private void updateRoute53Record(HostedZone zone, String recordName, String challengeDigest) {
+    final String recordValue = formatChallengeValue(challengeDigest);
+    final ResourceRecordSet recordSet = new ResourceRecordSet(recordName, RRType.TXT)
+        .withTTL(60L)
+        .withResourceRecords(new ResourceRecord(recordValue));
+    final ChangeBatch changeBatch = new ChangeBatch(ImmutableList.of(
+        new Change(ChangeAction.UPSERT, recordSet)));
+
+    final ChangeResourceRecordSetsRequest request =
+        new ChangeResourceRecordSetsRequest(zone.getId(), changeBatch);
+
+    /* Commit change and wait until AWS confirms propagation */
+    ChangeInfo changeInfo =
+        route53.changeResourceRecordSets(request).getChangeInfo();
+
+    log.info("Created record {} in zone {} with value {}. Status: {}",
+        recordName, zone.getName(), recordValue, changeInfo.getStatus());
+
+    while (changeInfo.getStatus().equals("PENDING")) {
+      changeInfo = route53.getChange(new GetChangeRequest(changeInfo.getId())).getChangeInfo();
+      Thread.sleep(1000);
     }
   }
 
