@@ -1,5 +1,6 @@
 package in.tazj.k8s.letsencrypt.kubernetes;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.BaseEncoding;
 
@@ -67,7 +68,8 @@ public class KeyPairManager {
         .done();
   }
 
-  private static Optional<KeyPair> getKeyPairFromCluster(KubernetesClient client) {
+  @VisibleForTesting
+  public static Optional<KeyPair> getKeyPairFromCluster(KubernetesClient client) {
     final Optional<KeyPair> clusterKeyPair =
         client.secrets().inNamespace("kube-system").list().getItems().stream()
         .filter(secret -> secret.getMetadata().getName().equals(secretName))
