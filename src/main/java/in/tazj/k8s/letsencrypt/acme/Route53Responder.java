@@ -3,9 +3,7 @@ package in.tazj.k8s.letsencrypt.acme;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.route53.AmazonRoute53;
-import com.amazonaws.services.route53.AmazonRoute53Client;
 import com.amazonaws.services.route53.model.Change;
 import com.amazonaws.services.route53.model.ChangeAction;
 import com.amazonaws.services.route53.model.ChangeBatch;
@@ -77,15 +75,7 @@ public class Route53Responder implements DnsResponder {
    * If multiple matching zones are found the most specific one is chosen. */
   @VisibleForTesting
   public Optional<HostedZone> findHostedZone(String record) {
-    // Determine whether the requested domain has a suffixed full stop, and otherwise add it as the
-    // hosted zones returned by Route53 will always contain it.
-    final String fqdnRecord;
-    if (record.endsWith(".")) {
-      fqdnRecord = record;
-    } else {
-      fqdnRecord = record + ".";
-    }
-
+    final String fqdnRecord = determineFqdnRecord(record);
     // Attempt to find the correct hosted zone by matching the longest matching suffix.
     final Optional<HostedZone> matchingZone = route53.listHostedZones().getHostedZones().stream()
         .filter(zone -> fqdnRecord.endsWith(zone.getName()))
