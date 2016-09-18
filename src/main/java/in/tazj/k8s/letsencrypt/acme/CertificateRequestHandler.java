@@ -12,6 +12,7 @@ import org.shredzone.acme4j.challenge.Challenge;
 import org.shredzone.acme4j.challenge.Dns01Challenge;
 import org.shredzone.acme4j.exception.AcmeConflictException;
 import org.shredzone.acme4j.exception.AcmeException;
+import org.shredzone.acme4j.exception.AcmeUnauthorizedException;
 import org.shredzone.acme4j.util.CSRBuilder;
 import org.shredzone.acme4j.util.CertificateUtils;
 import org.shredzone.acme4j.util.KeyPairUtils;
@@ -52,7 +53,17 @@ public class CertificateRequestHandler {
       final Challenge challenge = prepareDnsChallenge(authorization);
       completeChallenge(challenge);
       return generateSignCertificate(domain, registration);
+    } catch (AcmeUnauthorizedException e) {
+      val agreementError = "Must agree to subscriber agreement before any further actions";
+      if (e.getMessage().contains(agreementError)) {
+        agreeToSubscriberLicense(registration);
+        return requestCertificate(domain);
+      } else {
+        throw new LetsencryptException(e.getMessage());
+      }
+
     } catch (AcmeException | IOException e) {
+      e.printStackTrace();
       throw new LetsencryptException(e.getMessage());
     }
   }
@@ -136,10 +147,7 @@ public class CertificateRequestHandler {
 
     try {
       registration = new RegistrationBuilder().create(session);
-      final URI agreementUri = registration.getAgreement();
-      log.info("Agreeing to Letsencrypt subscriber agreement. "
-          + "Terms are available at {}", agreementUri);
-      registration.modify().setAgreement(agreementUri).commit();
+      agreeToSubscriberLicense(registration);
       log.info("Created new ACME user, URI: {}", registration.getLocation());
     } catch (AcmeConflictException e) {
       registration = Registration.bind(session, e.getLocation());
@@ -150,5 +158,18 @@ public class CertificateRequestHandler {
     }
 
     return registration;
+  }
+
+  private void agreeToSubscriberLicense(Registration registration) {
+    val agreementUri = registration.getAgreement();
+    log.info("Agreeing to Letsencrypt subscriber agreement. "
+        + "Terms are available at {}", agreementUri);
+
+    try {
+      registration.modify().setAgreement(agreementUri).commit();
+    } catch (AcmeException e) {
+      log.error("Could not agree to new subscriber agreement: {}", e.getMessage());
+      throw new LetsencryptException("Could not agree to subscriber agreement.");
+    }
   }
 }
