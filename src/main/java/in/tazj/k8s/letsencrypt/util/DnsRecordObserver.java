@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DnsRecordObserver {
   // TODO: Configurable!
-  final Minutes observerTimeout = Minutes.minutes(15);
+  final Minutes observerTimeout = Minutes.minutes(1);
   final DateTime dateTime = new DateTime();
   final String recordName;
   final String rootZone;
