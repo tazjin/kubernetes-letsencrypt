@@ -33,14 +33,14 @@ public class Main {
     client.services().watch(watcher);
   }
 
-  /** Run a reconciliation loop every two minutes. */
+  /** Run a reconciliation loop every five minutes. */
   public static void reconcile(ServiceWatcher watcher) {
     /* Run all existing services through the watcher */
     client.services().list().getItems().forEach(service ->
         watcher.eventReceived(Watcher.Action.ADDED, service));
 
     try {
-      Thread.sleep(2 * 60 * 1000);
+      Thread.sleep(5 * 60 * 1000);
     } catch (InterruptedException e) {
       log.error("Reconciliation loop was interrupted. {}", e.getMessage());
       System.exit(-1);
