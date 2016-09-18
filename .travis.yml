@@ -1,5 +1,7 @@
 language: java
-script: mvn package docker:build docker:push
+script:
+   - 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then mvn package; fi'
+   - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then mvn package docker:build docker:push; fi'
 sudo: required
 services:
   - docker
