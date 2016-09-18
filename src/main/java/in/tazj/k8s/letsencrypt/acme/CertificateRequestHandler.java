@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.BaseEncoding;
 
 import org.shredzone.acme4j.Authorization;
-import org.shredzone.acme4j.Certificate;
 import org.shredzone.acme4j.Registration;
 import org.shredzone.acme4j.RegistrationBuilder;
 import org.shredzone.acme4j.Session;
@@ -20,14 +19,14 @@ import org.shredzone.acme4j.util.KeyPairUtils;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URI;
-import java.security.KeyPair;
-import java.util.Map;
 
 import in.tazj.k8s.letsencrypt.kubernetes.KeyPairManager;
+import in.tazj.k8s.letsencrypt.model.CertificateResponse;
 import in.tazj.k8s.letsencrypt.util.DnsRecordObserver;
 import in.tazj.k8s.letsencrypt.util.LetsencryptException;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 
 /**
  * Requests certificates from a specified ACME server.
@@ -45,7 +44,7 @@ public class CertificateRequestHandler {
     this.dnsResponder = dnsResponder;
   }
 
-  public Map<String, String> requestCertificate(String domain) {
+  public CertificateResponse requestCertificate(String domain) {
     final Registration registration = getRegistration();
 
     try {
@@ -58,29 +57,32 @@ public class CertificateRequestHandler {
     }
   }
 
-  private Map<String, String> generateSignCertificate(String domain, Registration registration)
+  private CertificateResponse generateSignCertificate(String domain, Registration registration)
       throws IOException, AcmeException {
-    final KeyPair domainKeyPair = KeyPairUtils.createKeyPair(2048);
-    final CSRBuilder csrBuilder = new CSRBuilder();
+    val domainKeyPair = KeyPairUtils.createKeyPair(2048);
+    val csrBuilder = new CSRBuilder();
     csrBuilder.addDomain(domain);
     csrBuilder.sign(domainKeyPair);
 
-    final Certificate certificate = registration.requestCertificate(csrBuilder.getEncoded());
+    val certificate = registration.requestCertificate(csrBuilder.getEncoded());
+    val downloadedCertificate = certificate.download();
     log.info("Successfully retrieved certificate for domain {}", domain);
 
-    final StringWriter certWriter = new StringWriter();
-    CertificateUtils.writeX509Certificate(certificate.download(), certWriter);
+    val certWriter = new StringWriter();
+    CertificateUtils.writeX509Certificate(downloadedCertificate, certWriter);
 
-    final StringWriter chainWriter = new StringWriter();
+    val chainWriter = new StringWriter();
     CertificateUtils.writeX509CertificateChain(certificate.downloadChain(), chainWriter);
 
-    final StringWriter keyWriter = new StringWriter();
+    val keyWriter = new StringWriter();
     KeyPairUtils.writeKeyPair(domainKeyPair, keyWriter);
 
-    return ImmutableMap.of(
+    val certificateFiles =  ImmutableMap.of(
         "certificate.pem", base64EncodeWriter(certWriter),
         "chain.pem", base64EncodeWriter(chainWriter),
         "key.pem", base64EncodeWriter(keyWriter));
+
+    return new CertificateResponse(certificateFiles, downloadedCertificate.getNotAfter());
   }
 
   @SneakyThrows // UnsupportedEncodingException can not be thrown for UTF-8

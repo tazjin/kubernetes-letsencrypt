@@ -1,6 +1,11 @@
 package in.tazj.k8s.letsencrypt.kubernetes;
 
+import org.joda.time.LocalDate;
+
+import java.util.Optional;
+
 import in.tazj.k8s.letsencrypt.acme.CertificateRequestHandler;
+import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.Service;
 import io.netty.util.internal.ConcurrentSet;
 import lombok.extern.slf4j.Slf4j;
@@ -47,12 +52,18 @@ public class ServiceManager {
     val certificateName = service.getMetadata().getAnnotations().get(ANNOTATION);
     val secretName = certificateName.replace('.', '-') + "-tls";
     val serviceName = service.getMetadata().getName();
+    val secretOptional = certificateManager.getCertificate(namespace, secretName);
 
-    if (!certificateManager.getCertificate(namespace, secretName).isPresent()) {
+    if (!secretOptional.isPresent()) {
       log.info("Service {} requesting certificate {}", serviceName, certificateName);
 
-      val certificateFiles = requestHandler.requestCertificate(certificateName);
-      certificateManager.insertCertificate(namespace, secretName, certificateFiles);
+      val certificateResponse = requestHandler.requestCertificate(certificateName);
+      certificateManager.insertCertificate(namespace, secretName, certificateResponse);
+    } else if (checkCertificateNeedsRenewal(secretOptional.get())) {
+      log.info("Renewing certificate {} requested by {}", certificateName, serviceName);
+
+      val certificateResponse = requestHandler.requestCertificate(certificateName);
+      certificateManager.updateCertificate(namespace, secretName, certificateResponse);
     } else {
       log.debug("Certificate {} for service {} already exists", certificateName, serviceName);
     }
@@ -62,5 +73,29 @@ public class ServiceManager {
   private boolean isCertificateRequest(Service service) {
     val annotations = service.getMetadata().getAnnotations();
     return (annotations != null && annotations.containsKey(ANNOTATION));
+  }
+
+  /** Checks whether a certificate needs renewal (expires within some days from now). */
+  private boolean checkCertificateNeedsRenewal(Secret secret) {
+    val expiryDate = getExpiryDate(secret);
+
+    if (expiryDate.isPresent()) {
+      return LocalDate.now().isAfter(expiryDate.get().minusDays(2));
+    } else {
+      log.warn("No expiry date set on secret {} in namespace {}!",
+          secret.getMetadata().getName(), namespace);
+      return false;
+    }
+  }
+
+  private static Optional<LocalDate> getExpiryDate(Secret secret) {
+    val annotations = secret.getMetadata().getAnnotations();
+
+    if (annotations != null && annotations.get("acme/expiryDate") != null) {
+      val annotation = annotations.get("acme/expiryDate");
+      return Optional.of(new LocalDate(annotation));
+    } else {
+      return Optional.empty();
+    }
   }
 }
