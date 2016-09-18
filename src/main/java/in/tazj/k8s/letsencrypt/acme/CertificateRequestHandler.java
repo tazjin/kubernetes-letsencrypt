@@ -19,7 +19,6 @@ import org.shredzone.acme4j.util.KeyPairUtils;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.net.URI;
 
 import in.tazj.k8s.letsencrypt.kubernetes.KeyPairManager;
 import in.tazj.k8s.letsencrypt.model.CertificateResponse;
@@ -91,14 +90,21 @@ public class CertificateRequestHandler {
     val certificateFiles =  ImmutableMap.of(
         "certificate.pem", base64EncodeWriter(certWriter),
         "chain.pem", base64EncodeWriter(chainWriter),
-        "key.pem", base64EncodeWriter(keyWriter));
+        "key.pem", base64EncodeWriter(keyWriter),
+        "fullchain.pem", base64EncodeWriter(certWriter, chainWriter));
 
     return new CertificateResponse(certificateFiles, downloadedCertificate.getNotAfter());
   }
 
   @SneakyThrows // UnsupportedEncodingException can not be thrown for UTF-8
-  private String base64EncodeWriter(StringWriter writer) {
-    return base64.encode(writer.toString().getBytes("UTF-8"));
+  private String base64EncodeWriter(StringWriter ... writer) {
+    String current = "";
+
+    for (StringWriter stringWriter : writer) {
+      current = current + stringWriter.toString();
+    }
+
+    return base64.encode(current.getBytes("UTF-8"));
   }
 
   /** Attempt to validate the LetsEncrypt challenge with the retry policy specified above.
