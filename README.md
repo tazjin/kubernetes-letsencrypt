@@ -66,7 +66,8 @@ spec:
 The controller will notice this and, assuming you have a matching hosted zone, create a certificate
 and store it as a secret named `www-yourdomain-com-tls`.
 
-The certificate secret will contain three files named `certificate.pem`, `chain.pem` and `key.pem`.
+The certificate secret will contain four files named `certificate.pem`, `chain.pem`, `key.pem` and
+`fullchain.pem`.
 You can [mount these][] into whatever application you use to terminate TLS.
 
 The secret will always be created in the same namespace as your service. Removing the annotation
