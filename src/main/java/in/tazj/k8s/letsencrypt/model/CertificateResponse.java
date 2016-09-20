@@ -7,9 +7,10 @@ import lombok.Value;
 
 /**
  * A signed certificate as returned by the ACME server.
- * */
+ */
 @Value
 public class CertificateResponse {
   Map<String, String> certificateFiles;
   Date expiryDate;
+  String ca;
 }

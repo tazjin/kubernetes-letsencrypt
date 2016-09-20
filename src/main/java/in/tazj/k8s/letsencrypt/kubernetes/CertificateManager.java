@@ -12,6 +12,7 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
+import static in.tazj.k8s.letsencrypt.model.Constants.ACME_CA_ANNOTATION;
 import static in.tazj.k8s.letsencrypt.model.Constants.EXPIRY_ANNOTATION;
 
 /**
@@ -38,7 +39,10 @@ public class CertificateManager {
   public Secret insertCertificate(String namespace, String secretName,
                                   CertificateResponse certificate) {
     val expiryDate = LocalDate.fromDateFields(certificate.getExpiryDate());
-    val annotations = ImmutableMap.of(EXPIRY_ANNOTATION, expiryDate.toString());
+    val annotations = ImmutableMap.of(
+        EXPIRY_ANNOTATION, expiryDate.toString(),
+        ACME_CA_ANNOTATION, certificate.getCa());
+
     val secret = client.secrets().inNamespace(namespace)
         .createNew()
         .withNewMetadata()
@@ -60,6 +64,7 @@ public class CertificateManager {
         .editMetadata()
           .removeFromAnnotations(EXPIRY_ANNOTATION)
           .addToAnnotations(EXPIRY_ANNOTATION, expiryDate.toString())
+          .addToAnnotations(ACME_CA_ANNOTATION, certificate.getCa())
         .endMetadata()
         .withData(certificate.getCertificateFiles())
         .done();

@@ -93,7 +93,8 @@ public class CertificateRequestHandler {
         "key.pem", base64EncodeWriter(keyWriter),
         "fullchain.pem", base64EncodeWriter(certWriter, chainWriter));
 
-    return new CertificateResponse(certificateFiles, downloadedCertificate.getNotAfter());
+    return new CertificateResponse(certificateFiles,
+        downloadedCertificate.getNotAfter(), acmeServer);
   }
 
   @SneakyThrows // UnsupportedEncodingException can not be thrown for UTF-8
