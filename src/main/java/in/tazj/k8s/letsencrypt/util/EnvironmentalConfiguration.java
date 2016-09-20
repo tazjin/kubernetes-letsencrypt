@@ -22,7 +22,6 @@ public class EnvironmentalConfiguration {
     val environment = System.getenv();
     val acmeUrl =
         environment.getOrDefault("ACME_URL", "https://acme-v01.api.letsencrypt.org/directory");
-
     val cloudPlatform = getOrDetectCloudPlatform(environment);
 
     return new Configuration(cloudPlatform, acmeUrl);

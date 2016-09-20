@@ -12,12 +12,13 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
+import static in.tazj.k8s.letsencrypt.model.Constants.EXPIRY_ANNOTATION;
+
 /**
  * Manages certificates in the form of secrets in the Kubernetes API.
  */
 @Slf4j
 public class CertificateManager {
-  final private String EXPIRY_ANNOTATION = "acme/expiryDate";
   final private KubernetesClient client;
 
   public CertificateManager(KubernetesClient client) {

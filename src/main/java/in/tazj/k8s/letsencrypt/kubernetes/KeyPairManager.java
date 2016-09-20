@@ -18,11 +18,14 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
+import static in.tazj.k8s.letsencrypt.model.Constants.SYSTEM_NAMESPACE;
+
 /**
  * Manages the Letsencrypt user keypair as a secret in Kubernetes.
  */
 @Slf4j
 public class KeyPairManager {
+  final static private String KEYPAIR_FIELD = "keypair";
   final static private String secretName = "letsencrypt-keypair"; // TODO: configurable
   final static private BaseEncoding base64 = BaseEncoding.base64();
   final private KeyPair keyPair;
@@ -56,10 +59,10 @@ public class KeyPairManager {
 
     final String encodedSecret = base64.encode(secretWriter.toString().getBytes("UTF-8"));
     final Map<String, String> secretData =
-        ImmutableMap.of("keypair", encodedSecret);
+        ImmutableMap.of(KEYPAIR_FIELD, encodedSecret);
 
     client.secrets()
-        .inNamespace("kube-system")
+        .inNamespace(SYSTEM_NAMESPACE)
         .createNew()
         .withNewMetadata()
           .withName(secretName)
@@ -71,12 +74,12 @@ public class KeyPairManager {
   @VisibleForTesting
   public static Optional<KeyPair> getKeyPairFromCluster(KubernetesClient client) {
     final Optional<KeyPair> clusterKeyPair =
-        client.secrets().inNamespace("kube-system").list().getItems().stream()
+        client.secrets().inNamespace(SYSTEM_NAMESPACE).list().getItems().stream()
         .filter(secret -> secret.getMetadata().getName().equals(secretName))
         .map(secret -> {
           try {
             final String decodedKeyPair =
-                new String(base64.decode(secret.getData().get("keypair")), "UTF-8");
+                new String(base64.decode(secret.getData().get(KEYPAIR_FIELD)), "UTF-8");
             final StringReader reader = new StringReader(decodedKeyPair);
 
             return KeyPairUtils.readKeyPair(reader);

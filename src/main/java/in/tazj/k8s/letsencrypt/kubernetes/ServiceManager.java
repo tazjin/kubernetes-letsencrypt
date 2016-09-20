@@ -11,12 +11,14 @@ import io.netty.util.internal.ConcurrentSet;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
+import static in.tazj.k8s.letsencrypt.model.Constants.REQUEST_ANNOTATION;
+import static in.tazj.k8s.letsencrypt.model.Constants.EXPIRY_ANNOTATION;
+
 /**
  * This class deals with reconciling the state for all services in a given namespace.
  */
 @Slf4j
 public class ServiceManager {
-  final private String ANNOTATION = "acme/certificate";
   final private String namespace;
   final private CertificateManager certificateManager;
   final private CertificateRequestHandler requestHandler;
@@ -49,7 +51,7 @@ public class ServiceManager {
   }
 
   private void handleCertificateRequest(Service service) {
-    val certificateName = service.getMetadata().getAnnotations().get(ANNOTATION);
+    val certificateName = service.getMetadata().getAnnotations().get(REQUEST_ANNOTATION);
     val secretName = certificateName.replace('.', '-') + "-tls";
     val serviceName = service.getMetadata().getName();
     val secretOptional = certificateManager.getCertificate(namespace, secretName);
@@ -72,7 +74,7 @@ public class ServiceManager {
   /** Checks if a given service resource is requesting a Letsencrypt certificate. */
   private boolean isCertificateRequest(Service service) {
     val annotations = service.getMetadata().getAnnotations();
-    return (annotations != null && annotations.containsKey(ANNOTATION));
+    return (annotations != null && annotations.containsKey(REQUEST_ANNOTATION));
   }
 
   /** Checks whether a certificate needs renewal (expires within some days from now). */
@@ -91,8 +93,8 @@ public class ServiceManager {
   private static Optional<LocalDate> getExpiryDate(Secret secret) {
     val annotations = secret.getMetadata().getAnnotations();
 
-    if (annotations != null && annotations.get("acme/expiryDate") != null) {
-      val annotation = annotations.get("acme/expiryDate");
+    if (annotations != null && annotations.get(EXPIRY_ANNOTATION) != null) {
+      val annotation = annotations.get(EXPIRY_ANNOTATION);
       return Optional.of(new LocalDate(annotation));
     } else {
       return Optional.empty();
