@@ -23,11 +23,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DnsRecordObserver {
   // TODO: Configurable!
-  final Minutes observerTimeout = Minutes.minutes(1);
-  final DateTime dateTime = new DateTime();
-  final String recordName;
-  final String rootZone;
-  final String expectedValue;
+  final private Minutes observerTimeout = Minutes.minutes(1);
+  final private DateTime dateTime = new DateTime();
+  final private String recordName;
+  final private String rootZone;
+  final private String expectedValue;
 
   public DnsRecordObserver(String recordName, String rootZone, String expectedValue) {
     this.recordName = recordName;
@@ -42,8 +42,8 @@ public class DnsRecordObserver {
 
       // Wait on all nameservers in parallel
       nameservers.parallelStream()
-          .map(record -> record.rdataToString())
-          .forEach(nameserver -> waitWithNameserver(nameserver));
+          .map(Record::rdataToString)
+          .forEach(this::waitWithNameserver);
     } catch (TextParseException e) {
       e.printStackTrace();
     }

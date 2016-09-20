@@ -38,14 +38,14 @@ public class CertificateManager {
   /**
    * Insert a specified certificate in the Kubernetes cluster.
    */
-  public Secret insertCertificate(String namespace, String secretName,
-                                  CertificateResponse certificate) {
+  public void insertCertificate(String namespace, String secretName,
+                                CertificateResponse certificate) {
     val expiryDate = LocalDate.fromDateFields(certificate.getExpiryDate());
     val annotations = ImmutableMap.of(
         EXPIRY_ANNOTATION, expiryDate.toString(),
         ACME_CA_ANNOTATION, certificate.getCa());
 
-    val secret = client.secrets().inNamespace(namespace)
+    client.secrets().inNamespace(namespace)
         .createNew()
         .withNewMetadata()
           .withName(secretName)
@@ -55,14 +55,14 @@ public class CertificateManager {
         .done();
 
     log.info("Inserted secret {} into namespace {}", secretName, namespace);
-    return secret;
   }
 
-  public Secret updateCertificate(String namespace,
-                                  String secretName,
-                                  CertificateResponse certificate) {
+  public void updateCertificate(String namespace,
+                                String secretName,
+                                CertificateResponse certificate) {
     val expiryDate = LocalDate.fromDateFields(certificate.getExpiryDate());
-    val secret = client.secrets().inNamespace(namespace).withName(secretName).edit()
+
+    client.secrets().inNamespace(namespace).withName(secretName).edit()
         .editMetadata()
           .removeFromAnnotations(EXPIRY_ANNOTATION)
           .addToAnnotations(EXPIRY_ANNOTATION, expiryDate.toString())
@@ -72,6 +72,5 @@ public class CertificateManager {
         .done();
 
     log.info("Updated secret {} in namespace {}", secretName, namespace);
-    return secret;
   }
 }

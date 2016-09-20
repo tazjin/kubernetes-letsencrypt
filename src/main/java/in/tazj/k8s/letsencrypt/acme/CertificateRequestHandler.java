@@ -114,7 +114,7 @@ public class CertificateRequestHandler {
    * exception will be thrown.
    */
   @SneakyThrows // Ignore InterruptedException from sleep()
-  private void completeChallenge(Challenge challenge) throws AcmeException {
+  private void completeChallenge(Challenge challenge) {
     challenge.trigger();
     challenge.update();
 

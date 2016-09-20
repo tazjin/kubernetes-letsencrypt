@@ -38,9 +38,8 @@ public class Main {
     val namespaceManager = new NamespaceManager(client, certificateManager, requestHandler);
 
     /* Add all currently existing services to namespace manager */
-    client.namespaces().list().getItems().stream().forEach(namespace -> {
-      namespaceManager.eventReceived(ADDED, namespace);
-    });
+    client.namespaces().list().getItems()
+        .forEach(namespace -> namespaceManager.eventReceived(ADDED, namespace));
 
     /* Start watching namespace events */
     client.namespaces().watch(namespaceManager);

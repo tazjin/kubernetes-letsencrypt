@@ -80,8 +80,8 @@ public class NamespaceManager implements Watcher<Namespace> {
     @Override
     public void run() {
       /* Run all existing services through the watcher */
-      client.services().inNamespace(namespace).list().getItems().forEach(service ->
-          manager.reconcileService(service));
+      client.services().inNamespace(namespace).list().getItems()
+          .forEach(manager::reconcileService);
 
       try {
         Thread.sleep(60 * 1000);
