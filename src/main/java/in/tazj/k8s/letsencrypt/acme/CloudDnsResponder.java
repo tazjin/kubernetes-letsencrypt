@@ -86,7 +86,9 @@ public class CloudDnsResponder implements DnsResponder {
     return zone.applyChangeRequest(changeBuilder.build());
   }
 
-  /** Determine the most specific matching zone from available Cloud DNS zones. */
+  /**
+   * Determine the most specific matching zone from available Cloud DNS zones.
+   */
   @VisibleForTesting
   public Optional<Zone> findMatchingZone(String recordName) {
     val matchingZone = fetchMatchingZones(recordName).stream()
@@ -100,7 +102,9 @@ public class CloudDnsResponder implements DnsResponder {
     return matchingZone;
   }
 
-  /** Fetch all matching zones from Google Cloud DNS. This will deal with pagination accordingly. */
+  /**
+   * Fetch all matching zones from Google Cloud DNS. This will deal with pagination accordingly.
+   */
   private List<Zone> fetchMatchingZones(String recordName) {
     val fqdnRecord = determineFqdnRecord(recordName);
     val listBuilder = new ImmutableList.Builder<Zone>();

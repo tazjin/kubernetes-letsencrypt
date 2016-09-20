@@ -35,7 +35,9 @@ public class CertificateManager {
     return secret;
   }
 
-  /** Insert a specified certificate in the Kubernetes cluster. */
+  /**
+   * Insert a specified certificate in the Kubernetes cluster.
+   */
   public Secret insertCertificate(String namespace, String secretName,
                                   CertificateResponse certificate) {
     val expiryDate = LocalDate.fromDateFields(certificate.getExpiryDate());

@@ -87,7 +87,7 @@ public class CertificateRequestHandler {
     val keyWriter = new StringWriter();
     KeyPairUtils.writeKeyPair(domainKeyPair, keyWriter);
 
-    val certificateFiles =  ImmutableMap.of(
+    val certificateFiles = ImmutableMap.of(
         "certificate.pem", base64EncodeWriter(certWriter),
         "chain.pem", base64EncodeWriter(chainWriter),
         "key.pem", base64EncodeWriter(keyWriter),
@@ -98,7 +98,7 @@ public class CertificateRequestHandler {
   }
 
   @SneakyThrows // UnsupportedEncodingException can not be thrown for UTF-8
-  private String base64EncodeWriter(StringWriter ... writer) {
+  private String base64EncodeWriter(StringWriter... writer) {
     String current = "";
 
     for (StringWriter stringWriter : writer) {
@@ -108,9 +108,11 @@ public class CertificateRequestHandler {
     return base64.encode(current.getBytes("UTF-8"));
   }
 
-  /** Attempt to validate the LetsEncrypt challenge with the retry policy specified above.
+  /**
+   * Attempt to validate the LetsEncrypt challenge with the retry policy specified above.
    * If the challenge does not complete within 10 minutes it is assumed to have failed and an
-   * exception will be thrown. */
+   * exception will be thrown.
+   */
   @SneakyThrows // Ignore InterruptedException from sleep()
   private void completeChallenge(Challenge challenge) throws AcmeException {
     challenge.trigger();
@@ -127,8 +129,10 @@ public class CertificateRequestHandler {
     }
   }
 
-  /** Creates a DNS challenge and calls the DNS responder with the challenge data.
-   * Once this function returns the challenge, it should validate fine. */
+  /**
+   * Creates a DNS challenge and calls the DNS responder with the challenge data.
+   * Once this function returns the challenge, it should validate fine.
+   */
   private Challenge prepareDnsChallenge(Authorization authorization) {
     final Dns01Challenge dns01Challenge = authorization.findChallenge(Dns01Challenge.TYPE);
 

@@ -70,9 +70,11 @@ public class Route53Responder implements DnsResponder {
     }
   }
 
-  /** If no hosted zone is supplied explicitly this function will attempt to find a managed zone in
+  /**
+   * If no hosted zone is supplied explicitly this function will attempt to find a managed zone in
    * AWS that matches the supplied record.
-   * If multiple matching zones are found the most specific one is chosen. */
+   * If multiple matching zones are found the most specific one is chosen.
+   */
   @VisibleForTesting
   public Optional<HostedZone> findHostedZone(String record) {
     final String fqdnRecord = determineFqdnRecord(record);

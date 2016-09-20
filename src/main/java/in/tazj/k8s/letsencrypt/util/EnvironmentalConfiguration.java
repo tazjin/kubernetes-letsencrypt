@@ -13,7 +13,8 @@ import static in.tazj.k8s.letsencrypt.util.DetectCloudPlatform.detectCloudPlatfo
  */
 
 public class EnvironmentalConfiguration {
-  @Value public static class Configuration {
+  @Value
+  public static class Configuration {
     CloudPlatform cloudPlatform;
     String acmeUrl;
   }

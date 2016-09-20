@@ -36,14 +36,18 @@ public class DetectCloudPlatform {
     return CloudPlatform.UNKNOWN;
   }
 
-  /** Attempts to figure out whether the environment is AWS by checking the current region. */
+  /**
+   * Attempts to figure out whether the environment is AWS by checking the current region.
+   */
   private static boolean detectAmazonWebServices() {
     val region = Regions.getCurrentRegion();
     return (region != null);
   }
 
-  /** Attempts to figure out whether the environment is GCP by attempting to resolve the metadata
-   * server host. */
+  /**
+   * Attempts to figure out whether the environment is GCP by attempting to resolve the metadata
+   * server host.
+   */
   private static boolean detectGoogleCloudPlatform() {
     try {
       val lookup = new Lookup("metadata.google.internal");

@@ -50,7 +50,9 @@ public class KeyPairManager {
     }
   }
 
-  /** Update the newly generated key pair in the cluster. */
+  /**
+   * Update the newly generated key pair in the cluster.
+   */
   @SneakyThrows
   private void updateKeyPairInCluster(KubernetesClient client) {
     final StringWriter secretWriter = new StringWriter();
@@ -75,19 +77,19 @@ public class KeyPairManager {
   public static Optional<KeyPair> getKeyPairFromCluster(KubernetesClient client) {
     final Optional<KeyPair> clusterKeyPair =
         client.secrets().inNamespace(SYSTEM_NAMESPACE).list().getItems().stream()
-        .filter(secret -> secret.getMetadata().getName().equals(secretName))
-        .map(secret -> {
-          try {
-            final String decodedKeyPair =
-                new String(base64.decode(secret.getData().get(KEYPAIR_FIELD)), "UTF-8");
-            final StringReader reader = new StringReader(decodedKeyPair);
+            .filter(secret -> secret.getMetadata().getName().equals(secretName))
+            .map(secret -> {
+              try {
+                final String decodedKeyPair =
+                    new String(base64.decode(secret.getData().get(KEYPAIR_FIELD)), "UTF-8");
+                final StringReader reader = new StringReader(decodedKeyPair);
 
-            return KeyPairUtils.readKeyPair(reader);
-          } catch (IOException e) {
-            throw new LetsencryptException("Could not decode keypair in cluster secret");
-          }
-        })
-        .findAny();
+                return KeyPairUtils.readKeyPair(reader);
+              } catch (IOException e) {
+                throw new LetsencryptException("Could not decode keypair in cluster secret");
+              }
+            })
+            .findAny();
 
     return clusterKeyPair;
   }

@@ -11,8 +11,8 @@ import io.netty.util.internal.ConcurrentSet;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
-import static in.tazj.k8s.letsencrypt.model.Constants.REQUEST_ANNOTATION;
 import static in.tazj.k8s.letsencrypt.model.Constants.EXPIRY_ANNOTATION;
+import static in.tazj.k8s.letsencrypt.model.Constants.REQUEST_ANNOTATION;
 
 /**
  * This class deals with reconciling the state for all services in a given namespace.
@@ -23,7 +23,9 @@ public class ServiceManager {
   final private CertificateManager certificateManager;
   final private CertificateRequestHandler requestHandler;
 
-  /** This set is used to prevent two simultaneous requests for the same certificate. */
+  /**
+   * This set is used to prevent two simultaneous requests for the same certificate.
+   */
   final private ConcurrentSet<String> inProgressServices = new ConcurrentSet<>();
 
   public ServiceManager(String namespace,
@@ -34,7 +36,9 @@ public class ServiceManager {
     this.requestHandler = requestHandler;
   }
 
-  /** Receives a Kubernetes service object, checks for annotations and performs reconciliation. */
+  /**
+   * Receives a Kubernetes service object, checks for annotations and performs reconciliation.
+   */
   public void reconcileService(Service service) {
     val serviceName = service.getMetadata().getName();
     log.debug("Reconciliation request for {}", serviceName);
@@ -71,13 +75,17 @@ public class ServiceManager {
     }
   }
 
-  /** Checks if a given service resource is requesting a Letsencrypt certificate. */
+  /**
+   * Checks if a given service resource is requesting a Letsencrypt certificate.
+   */
   private boolean isCertificateRequest(Service service) {
     val annotations = service.getMetadata().getAnnotations();
     return (annotations != null && annotations.containsKey(REQUEST_ANNOTATION));
   }
 
-  /** Checks whether a certificate needs renewal (expires within some days from now). */
+  /**
+   * Checks whether a certificate needs renewal (expires within some days from now).
+   */
   private boolean checkCertificateNeedsRenewal(Secret secret) {
     val expiryDate = getExpiryDate(secret);
 
