@@ -56,17 +56,25 @@ metadata:
     acme/certificate: www.yourdomain.com
 spec:
   type: LoadBalancer
-  selector:
-    app: my-app
-  ports:
-    - port: 443
-      name: https
+[...]
 ```
 
 The controller will notice this and, assuming you have a matching hosted zone, create a certificate
 and store it as a secret named `www-yourdomain-com-tls`.
 
 You can override the name of the secret by specifying an annotation called `acme/secretName`.
+
+You may specify multiple domains to include in a certificate as a JSON array. This requires
+setting the `acme/secretName` annotation. For example:
+
+```
+[...]
+metadata:
+  annotations:
+    acme/certificate: '["yourdomain.com", "www.yourdomaian.com"]'
+    acme/secretName: mydomain-certificate
+[...]
+```
 
 The certificate secret will contain four files named `certificate.pem`, `chain.pem`, `key.pem` and
 `fullchain.pem`.
