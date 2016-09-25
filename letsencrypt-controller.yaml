@@ -14,6 +14,6 @@ spec:
         iam.amazonaws.com/role: "letsencrypt-controller"
     spec:
       containers:
-        - image: tazjin/letsencrypt-controller:1.3-SNAPSHOT
+        - image: tazjin/letsencrypt-controller:1.4-SNAPSHOT
           imagePullPolicy: Always
           name: letsencrypt-controller
