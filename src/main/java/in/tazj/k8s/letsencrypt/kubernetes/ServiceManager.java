@@ -1,18 +1,23 @@
 package in.tazj.k8s.letsencrypt.kubernetes;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
+import java.util.List;
 import java.util.Optional;
 
+import autovalue.shaded.com.google.common.common.collect.ImmutableList;
 import in.tazj.k8s.letsencrypt.acme.CertificateRequestHandler;
 import in.tazj.k8s.letsencrypt.model.CertificateRequest;
+import in.tazj.k8s.letsencrypt.util.LetsencryptException;
 import io.fabric8.kubernetes.api.model.Service;
 import io.netty.util.internal.ConcurrentSet;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import static in.tazj.k8s.letsencrypt.kubernetes.SecretManager.certificateNeedsRenewal;
-import static in.tazj.k8s.letsencrypt.model.Constants.ACME_SECRET_NAME_ANNOTATION;
+import static in.tazj.k8s.letsencrypt.model.Constants.SECRET_NAME_ANNOTATION;
 import static in.tazj.k8s.letsencrypt.model.Constants.REQUEST_ANNOTATION;
 
 /**
@@ -20,6 +25,7 @@ import static in.tazj.k8s.letsencrypt.model.Constants.REQUEST_ANNOTATION;
  */
 @Slf4j
 public class ServiceManager {
+  final static private Gson gson = new Gson();
   final private String namespace;
   final private SecretManager secretManager;
   final private CertificateRequestHandler requestHandler;
@@ -65,22 +71,24 @@ public class ServiceManager {
    */
   @VisibleForTesting
   public Optional<CertificateRequest> prepareCertificateRequest(Service service) {
-    val certificateName = service.getMetadata().getAnnotations().get(REQUEST_ANNOTATION);
+    val domains = getCertificateDomains(service);
     val serviceName = service.getMetadata().getName();
-    val secretName = getSecretName(service);
+    val secretAnnotation = service.getMetadata().getAnnotations().get(SECRET_NAME_ANNOTATION);
+    val secretName = getSecretName(domains, Optional.ofNullable(secretAnnotation));
     val secretOptional = secretManager.getSecret(namespace, secretName);
     val requestBuilder = CertificateRequest.builder()
         .secretName(secretName)
-        .certificateName(certificateName);
+        .domains(domains);
 
     if (!secretOptional.isPresent()) {
-      log.info("Service {} requesting certificate {}", serviceName, certificateName);
+      log.info("Service {} requesting certificates: {}", serviceName, domains.toString());
       requestBuilder.renew(false);
     } else if (certificateNeedsRenewal(namespace, secretOptional.get())) {
-      log.info("Renewing certificate {} requested by {}", certificateName, serviceName);
+      log.info("Renewing certificates {} requested by {}", domains.toString(), serviceName);
       requestBuilder.renew(true);
     } else {
-      log.debug("Certificate {} for service {} already exists", certificateName, serviceName);
+      log.debug("Certificate for {} requested by {} already exists",
+          domains.toString(), serviceName);
       return Optional.empty();
     }
 
@@ -95,10 +103,10 @@ public class ServiceManager {
    */
   private void handleCertificateRequest(CertificateRequest request) {
     if (request.getRenew()) {
-      val certificateResponse = requestHandler.requestCertificate(request.getCertificateName());
+      val certificateResponse = requestHandler.requestCertificate(request.getDomains());
       secretManager.updateCertificate(namespace, request.getSecretName(), certificateResponse);
     } else {
-      val certificateResponse = requestHandler.requestCertificate(request.getCertificateName());
+      val certificateResponse = requestHandler.requestCertificate(request.getDomains());
       secretManager.insertCertificate(namespace, request.getSecretName(), certificateResponse);
     }
   }
@@ -116,18 +124,44 @@ public class ServiceManager {
    *
    * Users may override the default secret name by specifying an acme/secretName annotation.
    */
-  private static String getSecretName(Service service) {
-    val annotations = service.getMetadata().getAnnotations();
-    val secretAnnotation = Optional.ofNullable(annotations.get(ACME_SECRET_NAME_ANNOTATION));
+  private static String getSecretName(List<String> domains, Optional<String> secretName) {
+    if (secretName.isPresent()) {
+      return secretName.get();
+    }
 
-    if (secretAnnotation.isPresent()) {
-      return secretAnnotation.get();
+    if (domains.size() >= 2) {
+      val error = "acme/secretName must be specified if multiple domains are requested!";
+      log.error(error);
+      throw new LetsencryptException(error);
+    }
+
+    val domain = domains.get(0);
+    val domainSecretName = domain.replace('.', '-') + "-tls";
+    return domainSecretName;
+  }
+
+  /**
+   * Determines the domain names for which a certificate has been requested via service annotations.
+   *
+   * If the annotation contains a JSON array of strings, each string will be considered a separate
+   * domain name and they will be added into a SAN certificate.
+   */
+  private static List<String> getCertificateDomains(Service service) {
+    val requestAnnotation = service.getMetadata().getAnnotations().get(REQUEST_ANNOTATION);
+
+    if (requestAnnotation.startsWith("[")) {
+      val type = new TypeToken<List<String>>() {}.getType();
+      final List<String> domains = gson.fromJson(requestAnnotation, type);
+
+      if (domains.size() == 0) {
+        val error = "No domains have been specified!";
+        log.error(error);
+        throw new LetsencryptException(error);
+      }
+
+      return domains;
     } else {
-      // This annotation is guaranteed to be set after this point as this function is called after
-      // isCertificateRequest().
-      val certificateName = annotations.get(REQUEST_ANNOTATION);
-      val secretName = certificateName.replace('.', '-') + "-tls";
-      return secretName;
+      return ImmutableList.of(requestAnnotation);
     }
   }
 }

@@ -19,6 +19,7 @@ import org.shredzone.acme4j.util.KeyPairUtils;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.List;
 
 import in.tazj.k8s.letsencrypt.kubernetes.KeyPairManager;
 import in.tazj.k8s.letsencrypt.model.CertificateResponse;
@@ -44,19 +45,18 @@ public class CertificateRequestHandler {
     this.dnsResponder = dnsResponder;
   }
 
-  public CertificateResponse requestCertificate(String domain) {
+  public CertificateResponse requestCertificate(List<String> domains) {
     final Registration registration = getRegistration();
 
     try {
-      final Authorization authorization = registration.authorizeDomain(domain);
-      final Challenge challenge = prepareDnsChallenge(authorization);
-      completeChallenge(challenge);
-      return generateSignCertificate(domain, registration);
+      // Complete domain challenges in parallel
+      domains.parallelStream().forEach(domain -> authorizeDomain(registration, domain));
+      return generateSignCertificate(domains, registration);
     } catch (AcmeUnauthorizedException e) {
       val agreementError = "Must agree to subscriber agreement before any further actions";
       if (e.getMessage().contains(agreementError)) {
         agreeToSubscriberLicense(registration);
-        return requestCertificate(domain);
+        return requestCertificate(domains);
       } else {
         throw new LetsencryptException(e.getMessage());
       }
@@ -67,16 +67,32 @@ public class CertificateRequestHandler {
     }
   }
 
-  private CertificateResponse generateSignCertificate(String domain, Registration registration)
+  /**
+   * Performs the authorization flow for a single domain after which the domain is authorized for
+   * the given registration.
+   * */
+  private void authorizeDomain(Registration registration, String domain) {
+    try {
+      val authorization = registration.authorizeDomain(domain);
+      val challenge = prepareDnsChallenge(authorization);
+      completeChallenge(challenge);
+    } catch (AcmeException e) {
+      e.printStackTrace();
+      throw new LetsencryptException(e.getMessage());
+    }
+  }
+
+  private CertificateResponse generateSignCertificate(List<String> domains,
+                                                      Registration registration)
       throws IOException, AcmeException {
     val domainKeyPair = KeyPairUtils.createKeyPair(2048);
     val csrBuilder = new CSRBuilder();
-    csrBuilder.addDomain(domain);
+    domains.forEach(csrBuilder::addDomain);
     csrBuilder.sign(domainKeyPair);
 
     val certificate = registration.requestCertificate(csrBuilder.getEncoded());
     val downloadedCertificate = certificate.download();
-    log.info("Successfully retrieved certificate for domain {}", domain);
+    log.info("Successfully retrieved certificate for domains: {}", domains.toString());
 
     val certWriter = new StringWriter();
     CertificateUtils.writeX509Certificate(downloadedCertificate, certWriter);

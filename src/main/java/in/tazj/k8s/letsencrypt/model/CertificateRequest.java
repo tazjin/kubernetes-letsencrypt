@@ -1,5 +1,7 @@
 package in.tazj.k8s.letsencrypt.model;
 
+import java.util.List;
+
 import lombok.Builder;
 import lombok.Value;
 
@@ -13,7 +15,7 @@ public class CertificateRequest {
   String secretName;
 
   /** The certificate subject name. */
-  String certificateName;
+  List<String> domains;
 
   /** Whether the certificate needs to be renewed. */
   Boolean renew;
