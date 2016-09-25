@@ -8,7 +8,7 @@ import in.tazj.k8s.letsencrypt.acme.CertificateRequestHandler;
 import in.tazj.k8s.letsencrypt.acme.CloudDnsResponder;
 import in.tazj.k8s.letsencrypt.acme.DnsResponder;
 import in.tazj.k8s.letsencrypt.acme.Route53Responder;
-import in.tazj.k8s.letsencrypt.kubernetes.CertificateManager;
+import in.tazj.k8s.letsencrypt.kubernetes.SecretManager;
 import in.tazj.k8s.letsencrypt.kubernetes.KeyPairManager;
 import in.tazj.k8s.letsencrypt.kubernetes.NamespaceManager;
 import in.tazj.k8s.letsencrypt.util.EnvironmentalConfiguration.Configuration;
@@ -31,7 +31,7 @@ public class Main {
   public static void main(String[] args) {
     val config = loadConfiguration();
     val dnsResponder = getCorrectDnsResponder(config);
-    val certificateManager = new CertificateManager(client);
+    val certificateManager = new SecretManager(client);
     val keyPairManager = KeyPairManager.with(client);
     val requestHandler =
         new CertificateRequestHandler(config.getAcmeUrl(), keyPairManager, dnsResponder);
