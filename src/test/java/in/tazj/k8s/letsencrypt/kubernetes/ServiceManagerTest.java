@@ -59,7 +59,7 @@ public class ServiceManagerTest {
 
   /** Prepare a plain, mocked secret for an existing certificate. */
   private Optional<Secret> prepareExistingSecret() {
-    val annotations = ImmutableMap.of(REQUEST_ANNOTATION, "existing.k8s.io");
+    val annotations = ImmutableMap.of(REQUEST_ANNOTATION, "[\"existing.k8s.io\"]");
     val secretMeta = Mockito.mock(ObjectMeta.class);
     when(secretMeta.getName()).thenReturn(EXISTING_CERT);
     when(secretMeta.getAnnotations()).thenReturn(annotations);

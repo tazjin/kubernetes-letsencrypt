@@ -84,7 +84,7 @@ public class ServiceManager {
     if (!secretOptional.isPresent()) {
       log.info("Service {} requesting certificates: {}", serviceName, domains.toString());
       requestBuilder.renew(false);
-    } else if (certificateNeedsRenewal(requestAnnotation, secretOptional.get())) {
+    } else if (certificateNeedsRenewal(domains, secretOptional.get())) {
       log.info("Renewing certificates {} requested by {}", domains.toString(), serviceName);
       requestBuilder.renew(true);
     } else {

@@ -1,12 +1,14 @@
 package in.tazj.k8s.letsencrypt.kubernetes;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import org.joda.time.LocalDate;
 
+import java.util.List;
 import java.util.Optional;
 
-import in.tazj.k8s.letsencrypt.model.CertificateRequest;
 import in.tazj.k8s.letsencrypt.model.CertificateResponse;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -22,6 +24,7 @@ import static in.tazj.k8s.letsencrypt.model.Constants.REQUEST_ANNOTATION;
  */
 @Slf4j
 public class SecretManager {
+  final static private Gson gson = new Gson();
   final private KubernetesClient client;
 
   public SecretManager(KubernetesClient client) {
@@ -43,9 +46,11 @@ public class SecretManager {
   public void insertCertificate(String namespace, String secretName,
                                 CertificateResponse certificate) {
     val expiryDate = LocalDate.fromDateFields(certificate.getExpiryDate());
+    val domains = gson.toJson(certificate.getDomains());
     val annotations = ImmutableMap.of(
         EXPIRY_ANNOTATION, expiryDate.toString(),
-        ACME_CA_ANNOTATION, certificate.getCa());
+        ACME_CA_ANNOTATION, certificate.getCa(),
+        REQUEST_ANNOTATION, domains);
 
     client.secrets().inNamespace(namespace)
         .createNew()
@@ -80,22 +85,24 @@ public class SecretManager {
    * Checks whether a certificate needs renewal. Renewal can be caused either by certificate expiry
    * or if the list of domains requested for a SAN certificate changes.
    */
-  public static boolean certificateNeedsRenewal(String requestAnnotation,
+  public static boolean certificateNeedsRenewal(List<String> domains,
                                                 Secret secret) {
     val isExpiring = certificateIsExpiring(secret);
-    val domainsChanged = haveDomainsChanged(requestAnnotation, secret);
+    val domainsChanged = haveDomainsChanged(domains, secret);
 
     return (isExpiring || domainsChanged);
   }
 
-  private static boolean haveDomainsChanged(String requestAnnotation, Secret secret) {
+  private static boolean haveDomainsChanged(List<String> domains, Secret secret) {
     val annotations = secret.getMetadata().getAnnotations();
 
     if (annotations != null ) {
-      val secretDomains = annotations.get(REQUEST_ANNOTATION);
+      val secretAnnotation = annotations.get(REQUEST_ANNOTATION);
 
-      if (secretDomains != null) {
-        val domainsChanged = !(requestAnnotation.equals(secretDomains));
+      if (secretAnnotation != null) {
+        val type = new TypeToken<List<String>>() {}.getType();
+        final List<String> secretDomains = gson.fromJson(secretAnnotation, type);
+        val domainsChanged = !(secretDomains.containsAll(domains));
         return domainsChanged;
       }
     }
