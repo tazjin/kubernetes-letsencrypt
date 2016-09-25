@@ -34,6 +34,7 @@ public class ServiceManagerTest {
   final private String EXISTING_CERT = "existing-k8s-io-tls";
   final private String RENEWAL_CERT = "renewal-k8s-io-tls";
   final private String CUSTOM_NAME = "customSecretName";
+  final private String MISMATCH_SECRET = "mismatchSecret";
 
   @Before
   public void setup() {
@@ -46,18 +47,22 @@ public class ServiceManagerTest {
   private SecretManager getMockedSecretManager() {
     val existingSecret = prepareExistingSecret();
     val renewalSecret = prepareRenewalSecret();
+    val mismatchSecret = prepareDomainMismatchSecret();
 
     val secretManager = Mockito.mock(SecretManager.class);
     when(secretManager.getSecret(anyString(), anyString())).thenReturn(Optional.empty());
     when(secretManager.getSecret(eq("default"), eq(EXISTING_CERT))).thenReturn(existingSecret);
     when(secretManager.getSecret(eq("default"), eq(RENEWAL_CERT))).thenReturn(renewalSecret);
+    when(secretManager.getSecret(eq("default"), eq(MISMATCH_SECRET))).thenReturn(mismatchSecret);
     return secretManager;
   }
 
   /** Prepare a plain, mocked secret for an existing certificate. */
   private Optional<Secret> prepareExistingSecret() {
+    val annotations = ImmutableMap.of(REQUEST_ANNOTATION, "existing.k8s.io");
     val secretMeta = Mockito.mock(ObjectMeta.class);
     when(secretMeta.getName()).thenReturn(EXISTING_CERT);
+    when(secretMeta.getAnnotations()).thenReturn(annotations);
 
     val secret = Mockito.mock(Secret.class);
     when(secret.getMetadata()).thenReturn(secretMeta);
@@ -71,6 +76,22 @@ public class ServiceManagerTest {
     val annotations = ImmutableMap.of(EXPIRY_ANNOTATION, expiryDate.toString());
     val secretMeta = Mockito.mock(ObjectMeta.class);
     when(secretMeta.getName()).thenReturn(RENEWAL_CERT);
+    when(secretMeta.getAnnotations()).thenReturn(annotations);
+
+    val secret = Mockito.mock(Secret.class);
+    when(secret.getMetadata()).thenReturn(secretMeta);
+
+    return Optional.of(secret);
+  }
+
+  /** Prepare a mocked secret with domain mismatch. */
+  private Optional<Secret> prepareDomainMismatchSecret() {
+    val annotations = ImmutableMap.of(
+        REQUEST_ANNOTATION, "[\"test1.k8s.io\", \"test3.k8s.io\"]"
+    );
+
+    val secretMeta = Mockito.mock(ObjectMeta.class);
+    when(secretMeta.getName()).thenReturn(MISMATCH_SECRET);
     when(secretMeta.getAnnotations()).thenReturn(annotations);
 
     val secret = Mockito.mock(Secret.class);
@@ -138,6 +159,21 @@ public class ServiceManagerTest {
 
     assertTrue("A certificate is requested", request.isPresent());
     assertFalse("Certificate is not a renewal", request.get().getRenew());
+    assertEquals("Two domains are included", 2, request.get().getDomains().size());
+    assertThat("Included domains match", request.get().getDomains(),
+        hasItems("test1.k8s.io", "test2.k8s.io"));
+  }
+
+  @Test
+  public void testDomainMismatchRequest() {
+    val testDomains = "[\"test1.k8s.io\", \"test2.k8s.io\"]";
+    val annotations = ImmutableMap.of(
+        REQUEST_ANNOTATION, testDomains,
+        SECRET_NAME_ANNOTATION, MISMATCH_SECRET);
+    val request = createTestRequest(annotations);
+
+    assertTrue("A certificate is requested", request.isPresent());
+    assertTrue("Certificate is a renewal", request.get().getRenew());
     assertEquals("Two domains are included", 2, request.get().getDomains().size());
     assertThat("Included domains match", request.get().getDomains(),
         hasItems("test1.k8s.io", "test2.k8s.io"));

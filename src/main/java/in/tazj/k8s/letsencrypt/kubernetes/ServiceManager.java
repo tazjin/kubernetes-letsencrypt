@@ -71,7 +71,8 @@ public class ServiceManager {
    */
   @VisibleForTesting
   public Optional<CertificateRequest> prepareCertificateRequest(Service service) {
-    val domains = getCertificateDomains(service);
+    val requestAnnotation = service.getMetadata().getAnnotations().get(REQUEST_ANNOTATION);
+    val domains = getCertificateDomains(requestAnnotation);
     val serviceName = service.getMetadata().getName();
     val secretAnnotation = service.getMetadata().getAnnotations().get(SECRET_NAME_ANNOTATION);
     val secretName = getSecretName(domains, Optional.ofNullable(secretAnnotation));
@@ -83,7 +84,7 @@ public class ServiceManager {
     if (!secretOptional.isPresent()) {
       log.info("Service {} requesting certificates: {}", serviceName, domains.toString());
       requestBuilder.renew(false);
-    } else if (certificateNeedsRenewal(namespace, secretOptional.get())) {
+    } else if (certificateNeedsRenewal(requestAnnotation, secretOptional.get())) {
       log.info("Renewing certificates {} requested by {}", domains.toString(), serviceName);
       requestBuilder.renew(true);
     } else {
@@ -146,9 +147,7 @@ public class ServiceManager {
    * If the annotation contains a JSON array of strings, each string will be considered a separate
    * domain name and they will be added into a SAN certificate.
    */
-  private static List<String> getCertificateDomains(Service service) {
-    val requestAnnotation = service.getMetadata().getAnnotations().get(REQUEST_ANNOTATION);
-
+  private static List<String> getCertificateDomains(String requestAnnotation) {
     if (requestAnnotation.startsWith("[")) {
       val type = new TypeToken<List<String>>() {}.getType();
       final List<String> domains = gson.fromJson(requestAnnotation, type);

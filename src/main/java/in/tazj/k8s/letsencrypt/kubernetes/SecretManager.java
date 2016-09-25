@@ -6,6 +6,7 @@ import org.joda.time.LocalDate;
 
 import java.util.Optional;
 
+import in.tazj.k8s.letsencrypt.model.CertificateRequest;
 import in.tazj.k8s.letsencrypt.model.CertificateResponse;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -14,6 +15,7 @@ import lombok.val;
 
 import static in.tazj.k8s.letsencrypt.model.Constants.ACME_CA_ANNOTATION;
 import static in.tazj.k8s.letsencrypt.model.Constants.EXPIRY_ANNOTATION;
+import static in.tazj.k8s.letsencrypt.model.Constants.REQUEST_ANNOTATION;
 
 /**
  * Manages certificates in the form of secrets in the Kubernetes API.
@@ -75,16 +77,41 @@ public class SecretManager {
   }
 
   /**
-   * Checks whether a certificate needs renewal (expires within some days from now).
+   * Checks whether a certificate needs renewal. Renewal can be caused either by certificate expiry
+   * or if the list of domains requested for a SAN certificate changes.
    */
-  public static boolean certificateNeedsRenewal(String namespace, Secret secret) {
+  public static boolean certificateNeedsRenewal(String requestAnnotation,
+                                                Secret secret) {
+    val isExpiring = certificateIsExpiring(secret);
+    val domainsChanged = haveDomainsChanged(requestAnnotation, secret);
+
+    return (isExpiring || domainsChanged);
+  }
+
+  private static boolean haveDomainsChanged(String requestAnnotation, Secret secret) {
+    val annotations = secret.getMetadata().getAnnotations();
+
+    if (annotations != null ) {
+      val secretDomains = annotations.get(REQUEST_ANNOTATION);
+
+      if (secretDomains != null) {
+        val domainsChanged = !(requestAnnotation.equals(secretDomains));
+        return domainsChanged;
+      }
+    }
+
+    log.warn("acme/certificate annotation missing on secret {}!", secret.getMetadata().getName());
+    return false;
+  }
+
+  public static boolean certificateIsExpiring(Secret secret) {
     val expiryDate = getExpiryDate(secret);
 
     if (expiryDate.isPresent()) {
       return LocalDate.now().isAfter(expiryDate.get().minusDays(2));
     } else {
       log.warn("No expiry date set on secret {} in namespace {}!",
-          secret.getMetadata().getName(), namespace);
+          secret.getMetadata().getName(), secret.getMetadata().getNamespace());
       return false;
     }
   }
