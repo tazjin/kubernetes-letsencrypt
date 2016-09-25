@@ -109,7 +109,7 @@ public class CertificateRequestHandler {
         "key.pem", base64EncodeWriter(keyWriter),
         "fullchain.pem", base64EncodeWriter(certWriter, chainWriter));
 
-    return new CertificateResponse(certificateFiles,
+    return new CertificateResponse(domains, certificateFiles,
         downloadedCertificate.getNotAfter(), acmeServer);
   }
 
