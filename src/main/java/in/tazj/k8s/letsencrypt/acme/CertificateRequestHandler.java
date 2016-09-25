@@ -26,6 +26,7 @@ import in.tazj.k8s.letsencrypt.model.CertificateResponse;
 import in.tazj.k8s.letsencrypt.util.DnsRecordObserver;
 import in.tazj.k8s.letsencrypt.util.LetsencryptException;
 import lombok.SneakyThrows;
+import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -73,13 +74,21 @@ public class CertificateRequestHandler {
    * */
   private void authorizeDomain(Registration registration, String domain) {
     try {
-      val authorization = registration.authorizeDomain(domain);
+      val authorization = getAuthorization(registration, domain);
       val challenge = prepareDnsChallenge(authorization);
       completeChallenge(challenge);
     } catch (AcmeException e) {
       e.printStackTrace();
       throw new LetsencryptException(e.getMessage());
     }
+  }
+
+  /** Let's Encrypt uses synchronous nonces to prevent request spoofing. */
+  @Synchronized
+  private Authorization getAuthorization(Registration registration, String domain)
+      throws AcmeException {
+    val authorization = registration.authorizeDomain(domain);
+    return authorization;
   }
 
   private CertificateResponse generateSignCertificate(List<String> domains,
@@ -129,6 +138,7 @@ public class CertificateRequestHandler {
    * If the challenge does not complete within 10 minutes it is assumed to have failed and an
    * exception will be thrown.
    */
+  @Synchronized
   @SneakyThrows // Ignore InterruptedException from sleep()
   private void completeChallenge(Challenge challenge) {
     challenge.trigger();
