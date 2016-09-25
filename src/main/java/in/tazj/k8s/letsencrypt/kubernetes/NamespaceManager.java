@@ -19,16 +19,16 @@ import lombok.val;
 @Slf4j
 public class NamespaceManager implements Watcher<Namespace> {
   final private KubernetesClient client;
-  final private CertificateManager certificateManager;
+  final private SecretManager secretManager;
   final private CertificateRequestHandler requestHandler;
 
   final private ConcurrentMap<String, Thread> namespaceThreadMap = new ConcurrentHashMap<>();
 
   public NamespaceManager(KubernetesClient client,
-                          CertificateManager certificateManager,
+                          SecretManager secretManager,
                           CertificateRequestHandler requestHandler) {
     this.client = client;
-    this.certificateManager = certificateManager;
+    this.secretManager = secretManager;
     this.requestHandler = requestHandler;
   }
 
@@ -51,7 +51,7 @@ public class NamespaceManager implements Watcher<Namespace> {
     val name = namespace.getMetadata().getName();
     if (!namespaceThreadMap.containsKey(name)) {
       log.info("Starting reconciliation loop for namespace {}", name);
-      val serviceManager = new ServiceManager(name, certificateManager, requestHandler);
+      val serviceManager = new ServiceManager(name, secretManager, requestHandler);
       val loop = new ReconciliationLoop(name, serviceManager);
       val thread = new Thread(loop);
       namespaceThreadMap.put(name, thread);

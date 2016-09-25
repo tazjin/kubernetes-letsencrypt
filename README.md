@@ -66,6 +66,8 @@ spec:
 The controller will notice this and, assuming you have a matching hosted zone, create a certificate
 and store it as a secret named `www-yourdomain-com-tls`.
 
+You can override the name of the secret by specifying an annotation called `acme/secretName`.
+
 The certificate secret will contain four files named `certificate.pem`, `chain.pem`, `key.pem` and
 `fullchain.pem`.
 You can [mount these][] into whatever application you use to terminate TLS.

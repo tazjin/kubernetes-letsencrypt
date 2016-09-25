@@ -19,18 +19,18 @@ import static in.tazj.k8s.letsencrypt.model.Constants.EXPIRY_ANNOTATION;
  * Manages certificates in the form of secrets in the Kubernetes API.
  */
 @Slf4j
-public class CertificateManager {
+public class SecretManager {
   final private KubernetesClient client;
 
-  public CertificateManager(KubernetesClient client) {
+  public SecretManager(KubernetesClient client) {
     this.client = client;
   }
 
-  public Optional<Secret> getCertificate(String namespace, String certificateName) {
+  public Optional<Secret> getSecret(String namespace, String secretName) {
     // TODO: .get() returns null but .list() works, not sure why yet.
     final Optional<Secret> secret = client.secrets().inNamespace(namespace)
         .list().getItems().stream()
-        .filter(s -> s.getMetadata().getName().equals(certificateName))
+        .filter(s -> s.getMetadata().getName().equals(secretName))
         .findFirst();
     return secret;
   }
@@ -72,5 +72,31 @@ public class CertificateManager {
         .done();
 
     log.info("Updated secret {} in namespace {}", secretName, namespace);
+  }
+
+  /**
+   * Checks whether a certificate needs renewal (expires within some days from now).
+   */
+  public static boolean certificateNeedsRenewal(String namespace, Secret secret) {
+    val expiryDate = getExpiryDate(secret);
+
+    if (expiryDate.isPresent()) {
+      return LocalDate.now().isAfter(expiryDate.get().minusDays(2));
+    } else {
+      log.warn("No expiry date set on secret {} in namespace {}!",
+          secret.getMetadata().getName(), namespace);
+      return false;
+    }
+  }
+
+  private static Optional<LocalDate> getExpiryDate(Secret secret) {
+    val annotations = secret.getMetadata().getAnnotations();
+
+    if (annotations != null && annotations.get(EXPIRY_ANNOTATION) != null) {
+      val annotation = annotations.get(EXPIRY_ANNOTATION);
+      return Optional.of(new LocalDate(annotation));
+    } else {
+      return Optional.empty();
+    }
   }
 }
