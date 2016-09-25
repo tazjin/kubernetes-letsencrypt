@@ -7,6 +7,6 @@ final public class Constants {
   final public static String REQUEST_ANNOTATION = "acme/certificate";
   final public static String EXPIRY_ANNOTATION = "acme/expiryDate";
   final public static String ACME_CA_ANNOTATION = "acme/ca";
-  final public static String ACME_SECRET_NAME_ANNOTATION = "acme/secretName";
+  final public static String SECRET_NAME_ANNOTATION = "acme/secretName";
   final public static String SYSTEM_NAMESPACE = "kube-system";
 }
