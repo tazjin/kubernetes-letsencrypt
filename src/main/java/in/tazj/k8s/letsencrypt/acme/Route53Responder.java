@@ -19,6 +19,7 @@ import java.util.Optional;
 
 import in.tazj.k8s.letsencrypt.util.LetsencryptException;
 import lombok.SneakyThrows;
+import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -45,6 +46,7 @@ public class Route53Responder implements DnsResponder {
     }
   }
 
+  @Synchronized
   @SneakyThrows // Ignore InterruptedException
   private void updateRoute53Record(HostedZone zone, String recordName, String challengeDigest) {
     final String recordValue = formatChallengeValue(challengeDigest);
