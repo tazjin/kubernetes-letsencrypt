@@ -68,12 +68,14 @@ public class SecretManager {
                                 String secretName,
                                 CertificateResponse certificate) {
     val expiryDate = LocalDate.fromDateFields(certificate.getExpiryDate());
+    val domains = gson.toJson(certificate.getDomains());
 
     client.secrets().inNamespace(namespace).withName(secretName).edit()
         .editMetadata()
           .removeFromAnnotations(EXPIRY_ANNOTATION)
           .addToAnnotations(EXPIRY_ANNOTATION, expiryDate.toString())
           .addToAnnotations(ACME_CA_ANNOTATION, certificate.getCa())
+          .addToAnnotations(REQUEST_ANNOTATION, domains)
         .endMetadata()
         .withData(certificate.getCertificateFiles())
         .done();
