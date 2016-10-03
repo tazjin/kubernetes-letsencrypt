@@ -80,6 +80,9 @@ The certificate secret will contain four files named `certificate.pem`, `chain.p
 `fullchain.pem`.
 You can [mount these][] into whatever application you use to terminate TLS.
 
+If required, you can configure these file names via the environment variables,
+`CERTIFICATE_FILENAME`, `CHAIN_FILENAME`, `KEY_FILENAME`, `FULLCHAIN_FILENAME`.
+
 The secret will always be created in the same namespace as your service. Removing the annotation
 will **never** remove a secret.
 
