@@ -34,7 +34,7 @@ public class Main {
     val certificateManager = new SecretManager(client);
     val keyPairManager = KeyPairManager.with(client);
     val requestHandler =
-        new CertificateRequestHandler(config.getAcmeUrl(), keyPairManager, dnsResponder);
+        new CertificateRequestHandler(config.getAcmeUrl(), config.getSecretFilenames(), keyPairManager, dnsResponder);
     val namespaceManager = new NamespaceManager(client, certificateManager, requestHandler);
 
     /* Add all currently existing services to namespace manager */

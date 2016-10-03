@@ -20,6 +20,7 @@ import org.shredzone.acme4j.util.KeyPairUtils;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.List;
+import java.util.Map;
 
 import in.tazj.k8s.letsencrypt.kubernetes.KeyPairManager;
 import in.tazj.k8s.letsencrypt.model.CertificateResponse;
@@ -39,11 +40,13 @@ public class CertificateRequestHandler {
   final private String acmeServer;
   final private KeyPairManager keyPairManager;
   final private DnsResponder dnsResponder;
+  final private Map<String, String> secretFilenames;
 
-  public CertificateRequestHandler(String acmeServer, KeyPairManager keyPairManager, DnsResponder dnsResponder) {
+  public CertificateRequestHandler(String acmeServer, Map<String, String> secretFilenames, KeyPairManager keyPairManager, DnsResponder dnsResponder) {
     this.acmeServer = acmeServer;
     this.keyPairManager = keyPairManager;
     this.dnsResponder = dnsResponder;
+    this.secretFilenames = secretFilenames;
   }
 
   public CertificateResponse requestCertificate(List<String> domains) {
@@ -113,10 +116,10 @@ public class CertificateRequestHandler {
     KeyPairUtils.writeKeyPair(domainKeyPair, keyWriter);
 
     val certificateFiles = ImmutableMap.of(
-        "certificate.pem", base64EncodeWriter(certWriter),
-        "chain.pem", base64EncodeWriter(chainWriter),
-        "key.pem", base64EncodeWriter(keyWriter),
-        "fullchain.pem", base64EncodeWriter(certWriter, chainWriter));
+        secretFilenames.get("certificate"), base64EncodeWriter(certWriter),
+        secretFilenames.get("chain"), base64EncodeWriter(chainWriter),
+        secretFilenames.get("key"), base64EncodeWriter(keyWriter),
+        secretFilenames.get("fullchain"), base64EncodeWriter(certWriter, chainWriter));
 
     return new CertificateResponse(domains, certificateFiles,
         downloadedCertificate.getNotAfter(), acmeServer);
