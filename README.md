@@ -30,7 +30,7 @@ Please refer to the 'Building' section for using your own image.
 
 ## Configuration
 
-The controller currently supports two configuration options via environment variables:
+The controller currently supports three configuration options via environment variables:
 
 * `ACME_URL`: This can be set to an alternative ACME directory URL, for example the Letsencrypt
   staging server if you only want to test out the controller.
@@ -39,6 +39,7 @@ The controller currently supports two configuration options via environment vari
   on Google's Cloud Platform.
   If you override this option you must provide credentials for the DNS backend, for example via the
   environment variables for the [Google Cloud Java SDK][] or the [AWS Java SDK][]
+* `LOG_LEVEL`: This can be used to set the log level to something other than the default (`INFO`).
 
 ## Usage
 
