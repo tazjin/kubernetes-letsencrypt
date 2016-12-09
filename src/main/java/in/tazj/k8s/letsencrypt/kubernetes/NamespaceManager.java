@@ -2,6 +2,8 @@ package in.tazj.k8s.letsencrypt.kubernetes;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import in.tazj.k8s.letsencrypt.acme.CertificateRequestHandler;
 import io.fabric8.kubernetes.api.model.Namespace;
@@ -10,6 +12,8 @@ import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.Watcher;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Watches Kubernetes namespaces and starts / stops threads when they are added or deleted.
@@ -22,7 +26,8 @@ public class NamespaceManager implements Watcher<Namespace> {
   final private SecretManager secretManager;
   final private CertificateRequestHandler requestHandler;
 
-  final private ConcurrentMap<String, Thread> namespaceThreadMap = new ConcurrentHashMap<>();
+  final private ConcurrentMap<String, ScheduledExecutorService> namespaceExecutorMap =
+      new ConcurrentHashMap<>();
 
   public NamespaceManager(KubernetesClient client,
                           SecretManager secretManager,
@@ -49,22 +54,23 @@ public class NamespaceManager implements Watcher<Namespace> {
 
   private void handleAddedNamespace(Namespace namespace) {
     val name = namespace.getMetadata().getName();
-    if (!namespaceThreadMap.containsKey(name)) {
+    if (!namespaceExecutorMap.containsKey(name)) {
       log.info("Starting reconciliation loop for namespace {}", name);
       val serviceManager = new ServiceManager(name, secretManager, requestHandler);
       val loop = new ReconciliationLoop(name, serviceManager);
-      val thread = new Thread(loop);
-      namespaceThreadMap.put(name, thread);
-      thread.start();
+      val scheduler = Executors.newSingleThreadScheduledExecutor();
+
+      scheduler.scheduleAtFixedRate(loop, 0, 45, SECONDS);
+      namespaceExecutorMap.put(name, scheduler);
     }
   }
 
   private void handleDeletedNamespace(Namespace namespace) {
     val name = namespace.getMetadata().getName();
-    if (namespaceThreadMap.containsKey(name)) {
+    if (namespaceExecutorMap.containsKey(name)) {
       log.info("Interrupting reconciliation loop for namespace {}", name);
-      val thread = namespaceThreadMap.get(name);
-      thread.interrupt();
+      val scheduler = namespaceExecutorMap.get(name);
+      scheduler.shutdown();
     }
   }
 
@@ -82,14 +88,6 @@ public class NamespaceManager implements Watcher<Namespace> {
       /* Run all existing services through the watcher */
       client.services().inNamespace(namespace).list().getItems()
           .forEach(manager::reconcileService);
-
-      try {
-        Thread.sleep(60 * 1000);
-      } catch (InterruptedException e) {
-        log.error("Watcher thread for namespace {} ended", namespace);
-      }
-
-      run();
     }
   }
 
