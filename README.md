@@ -72,7 +72,7 @@ setting the `acme/secretName` annotation. For example:
 [...]
 metadata:
   annotations:
-    acme/certificate: '["yourdomain.com", "www.yourdomaian.com"]'
+    acme/certificate: '["yourdomain.com", "www.yourdomain.com"]'
     acme/secretName: mydomain-certificate
 [...]
 ```
