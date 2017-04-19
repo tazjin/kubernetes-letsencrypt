@@ -26,6 +26,7 @@ import static com.google.cloud.dns.ChangeRequestInfo.Status.PENDING;
  */
 @Slf4j
 public class CloudDnsResponder implements DnsResponder {
+  final private static long PROPAGATION_WAIT_SECONDS = 100;
   final private Dns dns;
 
   public CloudDnsResponder(Dns dns) {
@@ -60,7 +61,7 @@ public class CloudDnsResponder implements DnsResponder {
     // being incorrect. Presumably something on Google's backend is eventually consistent.
     // With the below sleep timer the challenge will *usually* succeed. In some cases it may take a
     // few attempts.
-    Thread.sleep(60 * 1000);
+    Thread.sleep(PROPAGATION_WAIT_SECONDS * 1000);
   }
 
   private ChangeRequest updateCloudDnsRecord(Zone zone, String recordName, String challengeDigest) {
