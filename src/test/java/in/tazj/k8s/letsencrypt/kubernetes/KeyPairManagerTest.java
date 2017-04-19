@@ -21,8 +21,8 @@ import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretList;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.dsl.ClientMixedOperation;
-import io.fabric8.kubernetes.client.dsl.ClientResource;
+import io.fabric8.kubernetes.client.dsl.MixedOperation;
+import io.fabric8.kubernetes.client.dsl.Resource;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -32,8 +32,8 @@ public class KeyPairManagerTest {
   final static private BaseEncoding base64 = BaseEncoding.base64();
 
   @Mock
-  public ClientMixedOperation<Secret, SecretList, DoneableSecret,
-      ClientResource<Secret, DoneableSecret>> mockOperation;
+  public MixedOperation<Secret, SecretList, DoneableSecret,
+        Resource<Secret, DoneableSecret>> mockOperation;
 
   @Test
   public void testNoKeypairInCluster() {
@@ -67,7 +67,7 @@ public class KeyPairManagerTest {
     val testKeyPair = KeyPairManager.getKeyPairFromCluster(client);
 
     Assert.assertTrue("Test key pair found", testKeyPair.isPresent());
-    Assert.assertEquals("Test key pair decode correctly",
+    Assert.assertEquals("Test key pair decodes correctly",
         keypair.getPublic(), testKeyPair.get().getPublic());
   }
 

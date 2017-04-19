@@ -12,7 +12,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import in.tazj.k8s.letsencrypt.util.LetsencryptException;
 import lombok.SneakyThrows;
@@ -20,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import static com.google.cloud.dns.ChangeRequestInfo.Status.PENDING;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 /**
  * DNS challenge responder using Google Cloud DNS.
@@ -41,7 +41,7 @@ public class CloudDnsResponder implements DnsResponder {
     if (matchingZone.isPresent()) {
       val result = updateCloudDnsRecord(matchingZone.get(), recordName, challengeDigest);
       waitForUpdate(result);
-      return matchingZone.get().dnsName();
+      return matchingZone.get().getDnsName();
     } else {
       log.error("No matching zone found for {}", recordName);
       throw new LetsencryptException("No matching zone found.");
@@ -50,10 +50,10 @@ public class CloudDnsResponder implements DnsResponder {
 
   @SneakyThrows
   private void waitForUpdate(ChangeRequest result) {
-    log.info("Waiting for change in zone {} to finish. This may take some time.", result.zone());
+    log.info("Waiting for change in zone {} to finish. This may take some time.", result.getZone());
     while (result.status().equals(PENDING)) {
       Thread.sleep(500);
-      result = dns.getChangeRequest(result.zone(), result.generatedId());
+      result = dns.getChangeRequest(result.getZone(), result.getGeneratedId());
     }
 
     // Cloud DNS sometimes takes a while even after propagation has been confirmed.
@@ -66,18 +66,18 @@ public class CloudDnsResponder implements DnsResponder {
 
   private ChangeRequest updateCloudDnsRecord(Zone zone, String recordName, String challengeDigest) {
     val fqdnRecord = determineFqdnRecord(recordName);
-    val recordSet = RecordSet.builder(fqdnRecord, Type.TXT)
-        .ttl(1, TimeUnit.MINUTES)
+    val recordSet = RecordSet.newBuilder(fqdnRecord, Type.TXT)
+        .setTtl(1, MINUTES)
         .addRecord(challengeDigest)
         .build();
-    val changeBuilder = ChangeRequestInfo.builder();
+    val changeBuilder = ChangeRequestInfo.newBuilder();
 
     // Verify there is no existing record / overwrite it if there is.
     Iterator<RecordSet> recordSetIterator = zone.listRecordSets().iterateAll();
     while (recordSetIterator.hasNext()) {
       RecordSet current = recordSetIterator.next();
-      if (recordSet.name().equals(current.name()) &&
-          recordSet.type().equals(current.type())) {
+      if (recordSet.getName().equals(current.getName()) &&
+          recordSet.getType().equals(current.getType())) {
         changeBuilder.delete(current);
       }
     }
@@ -94,7 +94,7 @@ public class CloudDnsResponder implements DnsResponder {
   public Optional<Zone> findMatchingZone(String recordName) {
     val matchingZone = fetchMatchingZones(recordName).stream()
         .reduce(((acc, zone) -> {
-          if (zone.dnsName().length() > acc.dnsName().length()) {
+          if (zone.getDnsName().length() > acc.getDnsName().length()) {
             return zone;
           }
           return acc;
@@ -111,7 +111,7 @@ public class CloudDnsResponder implements DnsResponder {
     val listBuilder = new ImmutableList.Builder<Zone>();
 
     dns.listZones().iterateAll().forEachRemaining(zone -> {
-      if (fqdnRecord.contains(zone.dnsName())) {
+      if (fqdnRecord.contains(zone.getDnsName())) {
         listBuilder.add(zone);
       }
     });

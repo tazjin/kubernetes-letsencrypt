@@ -34,13 +34,13 @@ public class CloudDnsResponderTest {
     val result = responder.findMatchingZone(testRecord);
 
     Assert.assertTrue("A matching zone should be found", result.isPresent());
-    Assert.assertEquals("Correct zone is found", "correct", result.get().name());
+    Assert.assertEquals("Correct zone is found", "correct", result.get().getName());
   }
 
   private Zone zoneOf(String name, String dnsName) {
     val zone = Mockito.mock(Zone.class);
-    Mockito.when(zone.name()).thenReturn(name);
-    Mockito.when(zone.dnsName()).thenReturn(dnsName);
+    Mockito.when(zone.getName()).thenReturn(name);
+    Mockito.when(zone.getDnsName()).thenReturn(dnsName);
     return zone;
   }
 }

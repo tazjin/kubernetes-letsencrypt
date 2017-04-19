@@ -1,18 +1,19 @@
 package in.tazj.k8s.letsencrypt.kubernetes;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
-import autovalue.shaded.com.google.common.common.collect.ImmutableList;
 import in.tazj.k8s.letsencrypt.acme.CertificateRequestHandler;
 import in.tazj.k8s.letsencrypt.model.CertificateRequest;
 import in.tazj.k8s.letsencrypt.util.LetsencryptException;
 import io.fabric8.kubernetes.api.model.Service;
-import io.netty.util.internal.ConcurrentSet;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -33,7 +34,7 @@ public class ServiceManager {
   /**
    * This set is used to prevent two simultaneous requests for the same certificate.
    */
-  final private ConcurrentSet<String> inProgressServices = new ConcurrentSet<>();
+  final private Set<String> inProgressServices = Sets.newConcurrentHashSet();
 
   public ServiceManager(String namespace,
                         SecretManager secretManager,
