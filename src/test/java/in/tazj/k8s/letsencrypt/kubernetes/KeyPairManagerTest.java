@@ -67,7 +67,7 @@ public class KeyPairManagerTest {
     val testKeyPair = KeyPairManager.getKeyPairFromCluster(client);
 
     Assert.assertTrue("Test key pair found", testKeyPair.isPresent());
-    Assert.assertEquals("Test key pair decode correctly",
+    Assert.assertEquals("Test key pair decodes correctly",
         keypair.getPublic(), testKeyPair.get().getPublic());
   }
 
