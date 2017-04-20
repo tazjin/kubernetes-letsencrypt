@@ -18,58 +18,69 @@ import com.amazonaws.services.route53.model.ResourceRecordSet;
 import java.util.Optional;
 
 import in.tazj.k8s.letsencrypt.util.LetsencryptException;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
+import lombok.experimental.var;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+
+import static com.amazonaws.services.route53.model.ChangeAction.DELETE;
+import static com.amazonaws.services.route53.model.ChangeAction.UPSERT;
 
 /**
  * An ACME challenge responder using AWS Route53.
  */
 @Slf4j
+@RequiredArgsConstructor
 public class Route53Responder implements DnsResponder {
   final private AmazonRoute53 route53;
 
-  public Route53Responder(AmazonRoute53 route53) {
-    this.route53 = route53;
+  @Override
+  public String addChallengeRecord(String recordName, String challengeDigest) {
+    return updateRoute53Record(recordName, challengeDigest, UPSERT).getName();
   }
 
   @Override
-  public String addChallengeRecord(String recordName, String challengeDigest) {
-    final Optional<HostedZone> hostedZone = findHostedZone(recordName);
-
-    if (hostedZone.isPresent()) {
-      updateRoute53Record(hostedZone.get(), recordName, challengeDigest);
-      return hostedZone.get().getName();
-    } else {
-      log.error("No hosted zone found for record: {}!", recordName);
-      throw new LetsencryptException("No hosted zone found");
-    }
+  public void removeChallengeRecord(String recordName, String challengeDigest) {
+    updateRoute53Record(recordName, challengeDigest, DELETE);
   }
 
   @Synchronized
   @SneakyThrows // Ignore InterruptedException
-  private void updateRoute53Record(HostedZone zone, String recordName, String challengeDigest) {
-    final String recordValue = formatChallengeValue(challengeDigest);
-    final ResourceRecordSet recordSet = new ResourceRecordSet(recordName, RRType.TXT)
+  private HostedZone updateRoute53Record(String recordName,
+                                         String challengeDigest,
+                                         ChangeAction action) {
+    val hostedZone = findHostedZone(recordName);
+
+    if (!hostedZone.isPresent()) {
+      log.error("No hosted zone found for record: {}!", recordName);
+      throw new LetsencryptException("No hosted zone found");
+    }
+
+    val recordValue = formatChallengeValue(challengeDigest);
+    val recordSet = new ResourceRecordSet(recordName, RRType.TXT)
         .withTTL(60L)
         .withResourceRecords(new ResourceRecord(recordValue));
-    final ChangeBatch changeBatch = new ChangeBatch(ImmutableList.of(
-        new Change(ChangeAction.UPSERT, recordSet)));
+    val changeBatch = new ChangeBatch(ImmutableList.of(
+        new Change(action, recordSet)));
 
-    final ChangeResourceRecordSetsRequest request =
-        new ChangeResourceRecordSetsRequest(zone.getId(), changeBatch);
+    val request =
+        new ChangeResourceRecordSetsRequest(hostedZone.get().getId(), changeBatch);
 
     /* Commit change and wait until AWS confirms propagation */
     ChangeInfo changeInfo =
         route53.changeResourceRecordSets(request).getChangeInfo();
 
-    log.info("Created record {} in zone {} with value {}. Status: {}",
-        recordName, zone.getName(), recordValue, changeInfo.getStatus());
+    log.info("Applied {} to record {} in zone {} with value {}. Status: {}",
+        action, recordName, hostedZone.get().getName(), recordValue, changeInfo.getStatus());
 
     while (changeInfo.getStatus().equals("PENDING")) {
       changeInfo = route53.getChange(new GetChangeRequest(changeInfo.getId())).getChangeInfo();
       Thread.sleep(1000);
     }
+
+    return hostedZone.get();
   }
 
   /**
@@ -79,9 +90,9 @@ public class Route53Responder implements DnsResponder {
    */
   @VisibleForTesting
   public Optional<HostedZone> findHostedZone(String record) {
-    final String fqdnRecord = determineFqdnRecord(record);
+    val fqdnRecord = determineFqdnRecord(record);
     // Attempt to find the correct hosted zone by matching the longest matching suffix.
-    final Optional<HostedZone> matchingZone = route53.listHostedZones().getHostedZones().stream()
+    val matchingZone = route53.listHostedZones().getHostedZones().stream()
         .filter(zone -> fqdnRecord.endsWith(zone.getName()))
         .reduce(((acc, zone) -> {
           if (zone.getName().length() > acc.getName().length()) {

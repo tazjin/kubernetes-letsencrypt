@@ -9,6 +9,7 @@ public interface DnsResponder {
    * Returns the root of the zone at which the record was inserted.
    */
   String addChallengeRecord(String recordName, String challengeDigest);
+  void removeChallengeRecord(String recordName,  String challengeDigest);
 
   /**
    * Determine whether a record is in FQDN format suffixed with a full stop, and add it otherwise.
