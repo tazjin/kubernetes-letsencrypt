@@ -14,38 +14,39 @@ import java.util.List;
 import java.util.Optional;
 
 import in.tazj.k8s.letsencrypt.util.LetsencryptException;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import static com.google.cloud.dns.ChangeRequestInfo.Status.PENDING;
+import static in.tazj.k8s.letsencrypt.acme.CloudDnsResponder.ChangeType.ADD;
+import static in.tazj.k8s.letsencrypt.acme.CloudDnsResponder.ChangeType.REMOVE;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 /**
  * DNS challenge responder using Google Cloud DNS.
  */
-@Slf4j
+@Slf4j @RequiredArgsConstructor
 public class CloudDnsResponder implements DnsResponder {
   final private static long PROPAGATION_WAIT_SECONDS = 100;
   final private Dns dns;
 
-  public CloudDnsResponder(Dns dns) {
-    this.dns = dns;
+  enum ChangeType {
+    ADD, REMOVE
   }
-
 
   @Override
   public String addChallengeRecord(String recordName, String challengeDigest) {
-    val matchingZone = findMatchingZone(recordName);
+    val result = updateCloudDnsRecord(recordName, challengeDigest, ADD);
+    waitForUpdate(result);
 
-    if (matchingZone.isPresent()) {
-      val result = updateCloudDnsRecord(matchingZone.get(), recordName, challengeDigest);
-      waitForUpdate(result);
-      return matchingZone.get().getDnsName();
-    } else {
-      log.error("No matching zone found for {}", recordName);
-      throw new LetsencryptException("No matching zone found.");
-    }
+    return dns.getZone(result.getZone()).getDnsName();
+  }
+
+  @Override
+  public void removeChallengeRecord(String recordName, String challengeDigest) {
+    updateCloudDnsRecord(recordName, challengeDigest, REMOVE);
   }
 
   @SneakyThrows
@@ -64,12 +65,33 @@ public class CloudDnsResponder implements DnsResponder {
     Thread.sleep(PROPAGATION_WAIT_SECONDS * 1000);
   }
 
-  private ChangeRequest updateCloudDnsRecord(Zone zone, String recordName, String challengeDigest) {
+  private ChangeRequest updateCloudDnsRecord(String recordName,
+                                             String challengeDigest,
+                                             ChangeType changeType) {
+    val matchingZone = findMatchingZone(recordName);
+
+    if (!matchingZone.isPresent()) {
+      log.error("No matching zone found for {}", recordName);
+      throw new LetsencryptException("No matching zone found.");
+    }
+
+    val zone = matchingZone.get();
     val fqdnRecord = determineFqdnRecord(recordName);
-    val recordSet = RecordSet.newBuilder(fqdnRecord, Type.TXT)
-        .setTtl(1, MINUTES)
-        .addRecord(challengeDigest)
-        .build();
+    val recordSetBuilder = RecordSet
+        .newBuilder(fqdnRecord, Type.TXT)
+        .setTtl(1, MINUTES);
+
+    final RecordSet recordSet;
+    if (changeType.equals(ADD)) {
+      recordSet = recordSetBuilder
+          .addRecord(challengeDigest)
+          .build();
+    } else {
+      recordSet = recordSetBuilder
+          .removeRecord(challengeDigest)
+          .build();
+    }
+
     val changeBuilder = ChangeRequestInfo.newBuilder();
 
     // Verify there is no existing record / overwrite it if there is.
