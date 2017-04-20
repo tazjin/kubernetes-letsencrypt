@@ -138,6 +138,11 @@
       <version>21.0</version>
     </dependency>
     <dependency>
+      <groupId>io.javaslang</groupId>
+      <artifactId>javaslang</artifactId>
+      <version>2.0.5</version>
+    </dependency>
+    <dependency>
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-dns</artifactId>
       <version>0.8.0</version>

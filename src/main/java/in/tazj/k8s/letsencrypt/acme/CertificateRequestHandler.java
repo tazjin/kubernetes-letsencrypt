@@ -26,6 +26,8 @@ import in.tazj.k8s.letsencrypt.kubernetes.KeyPairManager;
 import in.tazj.k8s.letsencrypt.model.CertificateResponse;
 import in.tazj.k8s.letsencrypt.util.DnsRecordObserver;
 import in.tazj.k8s.letsencrypt.util.LetsencryptException;
+import javaslang.Tuple;
+import javaslang.Tuple2;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
@@ -78,8 +80,9 @@ public class CertificateRequestHandler {
   private void authorizeDomain(Registration registration, String domain) {
     try {
       val authorization = getAuthorization(registration, domain);
-      val challenge = prepareDnsChallenge(authorization);
-      completeChallenge(challenge);
+      val challengeTuple = prepareDnsChallenge(authorization);
+      completeChallenge(challengeTuple._1());
+      challengeTuple._2().run();
     } catch (AcmeException e) {
       e.printStackTrace();
       throw new LetsencryptException(e.getMessage());
@@ -161,8 +164,11 @@ public class CertificateRequestHandler {
   /**
    * Creates a DNS challenge and calls the DNS responder with the challenge data.
    * Once this function returns the challenge, it should validate fine.
+   *
+   * The returned tuple contains the challenge and a cleanup closure which can be called after
+   * challenge validation to remove the DNS record used for verification.
    */
-  private Challenge prepareDnsChallenge(Authorization authorization) {
+  private Tuple2<Challenge, Runnable> prepareDnsChallenge(Authorization authorization) {
     final Dns01Challenge dns01Challenge = authorization.findChallenge(Dns01Challenge.TYPE);
 
     if (dns01Challenge == null) {
@@ -170,15 +176,17 @@ public class CertificateRequestHandler {
       throw new LetsencryptException("Received no challenge");
     }
 
-    final String challengeRecord = "_acme-challenge." + authorization.getDomain();
-    final String rootZone =
-        dnsResponder.addChallengeRecord(challengeRecord, dns01Challenge.getDigest());
+    val challengeRecord = "_acme-challenge." + authorization.getDomain();
+    val rootZone = dnsResponder.addChallengeRecord(challengeRecord, dns01Challenge.getDigest());
 
     final DnsRecordObserver observer =
         new DnsRecordObserver(challengeRecord, rootZone, dns01Challenge.getDigest());
     observer.observeDns();
 
-    return dns01Challenge;
+    final Runnable cleanup = () ->
+        dnsResponder.removeChallengeRecord(challengeRecord, dns01Challenge.getDigest());
+
+    return Tuple.of(dns01Challenge, cleanup);
   }
 
   private Registration getRegistration() {

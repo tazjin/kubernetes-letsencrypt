@@ -7,6 +7,7 @@ import com.amazonaws.services.route53.AmazonRoute53;
 import com.amazonaws.services.route53.model.Change;
 import com.amazonaws.services.route53.model.ChangeAction;
 import com.amazonaws.services.route53.model.ChangeBatch;
+import com.amazonaws.services.route53.model.ChangeInfo;
 import com.amazonaws.services.route53.model.ChangeResourceRecordSetsRequest;
 import com.amazonaws.services.route53.model.GetChangeRequest;
 import com.amazonaws.services.route53.model.HostedZone;
@@ -68,7 +69,7 @@ public class Route53Responder implements DnsResponder {
         new ChangeResourceRecordSetsRequest(hostedZone.get().getId(), changeBatch);
 
     /* Commit change and wait until AWS confirms propagation */
-    var changeInfo =
+    ChangeInfo changeInfo =
         route53.changeResourceRecordSets(request).getChangeInfo();
 
     log.info("Applied {} to record {} in zone {} with value {}. Status: {}",
