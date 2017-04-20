@@ -41,8 +41,8 @@ public class Route53Responder implements DnsResponder {
   }
 
   @Override
-  public String removeChallengeRecord(String recordName, String challengeDigest) {
-    return updateRoute53Record(recordName, challengeDigest, DELETE).getName();
+  public void removeChallengeRecord(String recordName, String challengeDigest) {
+    updateRoute53Record(recordName, challengeDigest, DELETE);
   }
 
   @Synchronized
