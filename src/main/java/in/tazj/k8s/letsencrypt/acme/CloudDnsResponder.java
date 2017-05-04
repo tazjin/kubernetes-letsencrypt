@@ -77,34 +77,30 @@ public class CloudDnsResponder implements DnsResponder {
 
     val zone = matchingZone.get();
     val fqdnRecord = determineFqdnRecord(recordName);
-    val recordSetBuilder = RecordSet
-        .newBuilder(fqdnRecord, Type.TXT)
-        .setTtl(1, MINUTES);
 
-    final RecordSet recordSet;
-    if (changeType.equals(ADD)) {
-      recordSet = recordSetBuilder
-          .addRecord(challengeDigest)
-          .build();
-    } else {
-      recordSet = recordSetBuilder
-          .removeRecord(challengeDigest)
-          .build();
-    }
+    val recordSet = RecordSet
+        .newBuilder(fqdnRecord, Type.TXT)
+        .setTtl(1, MINUTES)
+        .addRecord(challengeDigest)
+        .build();
 
     val changeBuilder = ChangeRequestInfo.newBuilder();
 
-    // Verify there is no existing record / overwrite it if there is.
-    Iterator<RecordSet> recordSetIterator = zone.listRecordSets().iterateAll();
-    while (recordSetIterator.hasNext()) {
-      RecordSet current = recordSetIterator.next();
-      if (recordSet.getName().equals(current.getName()) &&
-          recordSet.getType().equals(current.getType())) {
-        changeBuilder.delete(current);
+    if (changeType.equals(ADD)) {
+      // Verify there is no existing record / overwrite it if there is.
+      Iterator<RecordSet> recordSetIterator = zone.listRecordSets().iterateAll();
+      while (recordSetIterator.hasNext()) {
+        val current = recordSetIterator.next();
+        if (recordSet.getName().equals(current.getName()) &&
+            recordSet.getType().equals(current.getType())) {
+          changeBuilder.delete(current);
+        }
       }
-    }
 
-    changeBuilder.add(recordSet);
+      changeBuilder.add(recordSet);
+    } else {
+      changeBuilder.delete(recordSet);
+    }
 
     return zone.applyChangeRequest(changeBuilder.build());
   }
