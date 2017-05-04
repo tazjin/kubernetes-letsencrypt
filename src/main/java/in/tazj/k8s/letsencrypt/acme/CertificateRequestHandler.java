@@ -28,6 +28,7 @@ import in.tazj.k8s.letsencrypt.util.DnsRecordObserver;
 import in.tazj.k8s.letsencrypt.util.LetsencryptException;
 import javaslang.Tuple;
 import javaslang.Tuple2;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
@@ -37,19 +38,13 @@ import lombok.val;
  * Requests certificates from a specified ACME server.
  */
 @Slf4j
+@RequiredArgsConstructor
 public class CertificateRequestHandler {
   final private BaseEncoding base64 = BaseEncoding.base64();
   final private String acmeServer;
+  final private Map<String, String> secretFilenames;
   final private KeyPairManager keyPairManager;
   final private DnsResponder dnsResponder;
-  final private Map<String, String> secretFilenames;
-
-  public CertificateRequestHandler(String acmeServer, Map<String, String> secretFilenames, KeyPairManager keyPairManager, DnsResponder dnsResponder) {
-    this.acmeServer = acmeServer;
-    this.keyPairManager = keyPairManager;
-    this.dnsResponder = dnsResponder;
-    this.secretFilenames = secretFilenames;
-  }
 
   public CertificateResponse requestCertificate(List<String> domains) {
     final Registration registration = getRegistration();
