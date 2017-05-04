@@ -75,6 +75,11 @@ public class CertificateRequestHandler {
   private void authorizeDomain(Registration registration, String domain) {
     try {
       val authorization = getAuthorization(registration, domain);
+
+      if (authorization.getStatus().equals(Status.VALID)) {
+        return;
+      }
+
       val challengeTuple = prepareDnsChallenge(authorization);
       completeChallenge(challengeTuple._1());
       challengeTuple._2().run();
