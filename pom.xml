@@ -110,6 +110,12 @@
       <groupId>com.amazonaws</groupId>
       <artifactId>aws-java-sdk-route53</artifactId>
       <version>1.11.119</version>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.projectlombok</groupId>
@@ -162,6 +168,11 @@
       <groupId>net.logstash.logback</groupId>
       <artifactId>logstash-logback-encoder</artifactId>
       <version>4.9</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jcl-over-slf4j</artifactId>
+      <version>1.7.25</version>
     </dependency>
     <!-- Test dependencies -->
     <dependency>
