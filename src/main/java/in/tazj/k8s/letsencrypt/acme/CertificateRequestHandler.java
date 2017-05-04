@@ -77,8 +77,11 @@ public class CertificateRequestHandler {
       val authorization = getAuthorization(registration, domain);
 
       if (authorization.getStatus().equals(Status.VALID)) {
+        log.info("Authorization for {} still valid, not issuing new challenge", domain);
         return;
       }
+
+      log.info("Issuing new challenge for {}", domain);
 
       val challengeTuple = prepareDnsChallenge(authorization);
       completeChallenge(challengeTuple._1());
@@ -159,6 +162,8 @@ public class CertificateRequestHandler {
       log.error("Challenge {} failed", challenge.getLocation());
       throw new LetsencryptException("Failed due to invalid challenge");
     }
+
+    log.info("Challenge {} completed", challenge.getLocation());
   }
 
   /**
