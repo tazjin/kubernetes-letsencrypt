@@ -19,9 +19,6 @@ import java.time.ZoneId
  * Manages certificates in the form of secrets in the Kubernetes API.
  */
 class SecretManager(val client: KubernetesClient) {
-    private val gson = Gson()
-    private val log = LoggerFactory.getLogger(this.javaClass)
-
     fun getSecret(namespace: String, secretName: String): Option<Secret> {
         // TODO: .get() returns null but .list() works, not sure why yet.
         return client.secrets().inNamespace(namespace)
@@ -80,44 +77,49 @@ class SecretManager(val client: KubernetesClient) {
         log.info("Updated secret {} in namespace {}", secretName, namespace)
     }
 
-    /**
-     * Checks whether a certificate needs renewal. Renewal can be caused either by certificate expiry
-     * or if the list of domains requested for a SAN certificate changes.
-     */
-    fun certificateNeedsRenewal(domains: List<String>, secret: Secret): Boolean {
-        val isExpiring = certificateIsExpiring(secret)
-        val domainsChanged = haveDomainsChanged(domains, secret)
+    companion object {
+        private val log = LoggerFactory.getLogger(this::class.java)
+        private val gson = Gson()
 
-        return isExpiring || domainsChanged
-    }
+        /**
+         * Checks whether a certificate needs renewal. Renewal can be caused either by certificate expiry
+         * or if the list of domains requested for a SAN certificate changes.
+         */
+        fun certificateNeedsRenewal(domains: List<String>, secret: Secret): Boolean {
+            val isExpiring = certificateIsExpiring(secret)
+            val domainsChanged = haveDomainsChanged(domains, secret)
 
-    fun certificateIsExpiring(secret: Secret): Boolean {
-        val expiryDate = getExpiryDate(secret)
-
-        if (expiryDate.isDefined()) {
-            return LocalDate.now().isAfter(expiryDate.get().minusDays(2))
-        } else {
-            log.warn("No expiry date set on secret {} in namespace {}!",
-                    secret.metadata.name, secret.metadata.namespace)
-            return false
+            return isExpiring || domainsChanged
         }
-    }
 
-    private fun getExpiryDate(secret: Secret): Option<LocalDate> {
-        val annotation = secret.metadata.annotations[EXPIRY_ANNOTATION]
-        return annotation.toOption().map { LocalDate.parse(it) }
-    }
+        fun certificateIsExpiring(secret: Secret): Boolean {
+            val expiryDate = getExpiryDate(secret)
 
-    private fun haveDomainsChanged(domains: List<String>, secret: Secret): Boolean {
-        return secret.metadata.annotations[REQUEST_ANNOTATION].toOption()
-                .map {
-                    val type = object: TypeToken<List<String>>() {}.type
-                    val secretDomains: List<String> = gson.fromJson(it, type)
-                    secretDomains.containsAll(domains)
-                }
-                .getOrElse {
-                    log.warn("acme/certificate annotation missing on secret {}!", secret.metadata.name)
-                    false
-                }
+            if (expiryDate.isDefined()) {
+                return LocalDate.now().isAfter(expiryDate.get().minusDays(2))
+            } else {
+                log.warn("No expiry date set on secret {} in namespace {}!",
+                        secret.metadata.name, secret.metadata.namespace)
+                return false
+            }
+        }
+
+        private fun getExpiryDate(secret: Secret): Option<LocalDate> {
+            val annotation = secret.metadata.annotations[EXPIRY_ANNOTATION]
+            return annotation.toOption().map { LocalDate.parse(it) }
+        }
+
+        private fun haveDomainsChanged(domains: List<String>, secret: Secret): Boolean {
+            return secret.metadata.annotations[REQUEST_ANNOTATION].toOption()
+                    .map {
+                        val type = object : TypeToken<List<String>>() {}.type
+                        val secretDomains: List<String> = gson.fromJson(it, type)
+                        secretDomains.containsAll(domains)
+                    }
+                    .getOrElse {
+                        log.warn("acme/certificate annotation missing on secret {}!", secret.metadata.name)
+                        false
+                    }
+        }
     }
 }
