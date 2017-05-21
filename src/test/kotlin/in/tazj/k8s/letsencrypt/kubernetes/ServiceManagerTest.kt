@@ -8,20 +8,18 @@ import `in`.tazj.k8s.letsencrypt.model.REQUEST_ANNOTATION
 import `in`.tazj.k8s.letsencrypt.model.SECRET_NAME_ANNOTATION
 import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.Secret
+import io.fabric8.kubernetes.api.model.Service
 import org.funktionale.option.Option
 import org.funktionale.option.toOption
+import org.hamcrest.CoreMatchers.hasItems
+import org.junit.Assert.*
 import org.junit.Before
+import org.junit.Test
 import org.mockito.Matchers.anyString
 import org.mockito.Matchers.eq
 import org.mockito.Mockito
 import org.mockito.Mockito.`when`
 import java.time.LocalDate
-import lombok.`val`
-import com.google.common.collect.ImmutableMap
-import io.fabric8.kubernetes.api.model.Service
-import org.hamcrest.CoreMatchers.hasItems
-import org.junit.Assert.*
-import org.junit.Test
 
 
 class ServiceManagerTest {

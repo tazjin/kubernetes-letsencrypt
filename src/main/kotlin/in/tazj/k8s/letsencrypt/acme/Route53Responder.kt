@@ -3,12 +3,12 @@ package `in`.tazj.k8s.letsencrypt.acme
 import `in`.tazj.k8s.letsencrypt.util.LetsencryptException
 import com.amazonaws.services.route53.AmazonRoute53
 import com.amazonaws.services.route53.model.*
+import com.amazonaws.services.route53.model.ChangeAction.DELETE
+import com.amazonaws.services.route53.model.ChangeAction.UPSERT
 import com.google.common.collect.ImmutableList
 import org.funktionale.option.Option
 import org.funktionale.option.toOption
 import org.slf4j.LoggerFactory
-import com.amazonaws.services.route53.model.ChangeAction.DELETE
-import com.amazonaws.services.route53.model.ChangeAction.UPSERT
 
 
 /**
@@ -77,7 +77,7 @@ class Route53Responder(val route53: AmazonRoute53) : DnsResponder {
                     }
                 }.toOption()
 
-        matchingZone.forEach{ log.info("Found matching zone {} for record {}", it.name, record) }
+        matchingZone.forEach { log.info("Found matching zone {} for record {}", it.name, record) }
         return matchingZone
     }
 

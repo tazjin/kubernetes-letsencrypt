@@ -42,7 +42,7 @@ fun main(args: Array<String>) {
 
     // Add all currently existing namespaces to namespace manager
     client.namespaces().list().items.forEach(
-            {namespaceManager.eventReceived(Watcher.Action.ADDED, it)}
+            { namespaceManager.eventReceived(Watcher.Action.ADDED, it) }
     )
 
     // Start watching namespace events
@@ -70,7 +70,7 @@ fun registerSignalHandlers() {
 
 fun getCorrectDnsResponder(config: Configuration): DnsResponder {
     when (config.cloudPlatform) {
-        GCP ->  {
+        GCP -> {
             val dns = DnsOptions.getDefaultInstance().service
             return CloudDnsResponder(dns)
         }

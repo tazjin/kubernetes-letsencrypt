@@ -74,7 +74,7 @@ class ServiceManager(
      * for reconciliation.
      */
     fun prepareCertificateRequest(service: Service): Option<CertificateRequest> {
-        val requestAnnotation = service.metadata.annotations[REQUEST_ANNOTATION] !!
+        val requestAnnotation = service.metadata.annotations[REQUEST_ANNOTATION]!!
         val domains = getCertificateDomains(requestAnnotation)
         val serviceName = service.metadata.name
         val secretAnnotation = service.metadata.annotations[SECRET_NAME_ANNOTATION].toOption()

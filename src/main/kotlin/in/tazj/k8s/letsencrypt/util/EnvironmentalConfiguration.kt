@@ -17,7 +17,7 @@ data class Configuration(
         val secretFilenames: SecretFilenames
 )
 
-private fun getOrDetectCloudPlatform(platform: Option<String>): CloudPlatform{
+private fun getOrDetectCloudPlatform(platform: Option<String>): CloudPlatform {
     return platform
             .map { CloudPlatform.valueOf(it) }
             .getOrElse { detectCloudPlatform() }
