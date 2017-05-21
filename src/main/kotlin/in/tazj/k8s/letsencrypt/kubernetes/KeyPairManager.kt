@@ -15,10 +15,24 @@ import java.security.KeyPair
  * Manages the Let's Encrypt user keypair as a secret in Kubernetes.
  */
 class KeyPairManager(val keyPair: KeyPair) {
-    private val KEYPAIR_FIELD = "keypair"
-    private val SECRET_NAME = "letsencrypt-keypair"
-    private val BASE64 = BaseEncoding.base64()
-    private val log = LoggerFactory.getLogger(this.javaClass)
+    companion object {
+        val BASE64 = BaseEncoding.base64()
+        val KEYPAIR_FIELD = "keypair"
+        val SECRET_NAME = "letsencrypt-keypair"
+        val log = LoggerFactory.getLogger(this::class.java)
+
+        fun getKeyPairFromCluster(client: KubernetesClient): Option<KeyPair> {
+            val secret = client.secrets().inNamespace(SYSTEM_NAMESPACE).list().items
+                    .filter { it.metadata.name == SECRET_NAME }
+                    .last().toOption()
+
+            return secret.map {
+                val decodedKeyPair = String(BASE64.decode(it.data[KEYPAIR_FIELD]))
+                val reader = StringReader(decodedKeyPair)
+                return KeyPairUtils.readKeyPair(reader).toOption()
+            }
+        }
+    }
 
     fun with(client: KubernetesClient): KeyPairManager {
         val clusterKeyPair = getKeyPairFromCluster(client)
@@ -51,17 +65,5 @@ class KeyPairManager(val keyPair: KeyPair) {
                 .endMetadata()
                 .withData(secretData)
                 .done()
-    }
-
-    fun getKeyPairFromCluster(client: KubernetesClient): Option<KeyPair> {
-        val secret = client.secrets().inNamespace(SYSTEM_NAMESPACE).list().items
-                .filter { it.metadata.name == SECRET_NAME }
-                .last().toOption()
-
-        return secret.map {
-            val decodedKeyPair = String(BASE64.decode(it.data[KEYPAIR_FIELD]))
-            val reader = StringReader(decodedKeyPair)
-            return KeyPairUtils.readKeyPair(reader).toOption()
-        }
     }
 }
