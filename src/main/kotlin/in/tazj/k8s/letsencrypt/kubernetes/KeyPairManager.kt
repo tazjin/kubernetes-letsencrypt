@@ -32,21 +32,21 @@ class KeyPairManager(val keyPair: KeyPair) {
                 return KeyPairUtils.readKeyPair(reader).toOption()
             }
         }
-    }
 
-    fun with(client: KubernetesClient): KeyPairManager {
-        val clusterKeyPair = getKeyPairFromCluster(client)
+        fun with(client: KubernetesClient): KeyPairManager {
+            val clusterKeyPair = getKeyPairFromCluster(client)
 
-        if (clusterKeyPair.isDefined()) {
-            log.info("Existing key pair loaded from cluster")
-            return KeyPairManager(clusterKeyPair.get())
-        } else {
-            log.info("No existing key pair, generating a new one")
-            val newKeyPair = KeyPairUtils.createKeyPair(2048)
-            val manager = KeyPairManager(newKeyPair)
-            manager.updateKeyPairInCluster(client)
-            log.info("New key pair stored in cluster")
-            return manager
+            if (clusterKeyPair.isDefined()) {
+                log.info("Existing key pair loaded from cluster")
+                return KeyPairManager(clusterKeyPair.get())
+            } else {
+                log.info("No existing key pair, generating a new one")
+                val newKeyPair = KeyPairUtils.createKeyPair(2048)
+                val manager = KeyPairManager(newKeyPair)
+                manager.updateKeyPairInCluster(client)
+                log.info("New key pair stored in cluster")
+                return manager
+            }
         }
     }
 
