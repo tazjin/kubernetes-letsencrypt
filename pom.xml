@@ -10,7 +10,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <mainClass>in.tazj.k8s.letsencrypt.Main</mainClass>
+    <mainClass>in.tazj.k8s.letsencrypt.MainKt</mainClass>
     <docker.imageName>tazjin/letsencrypt-controller</docker.imageName>
     <docker.image>${docker.imageName}:${project.version}</docker.image>
     <kotlin.version>1.1.2-3</kotlin.version>
@@ -28,7 +28,6 @@
        Images are versioned with both the Maven version and a git-hash. -->
   <build>
     <plugins>
-      <!-- Language level for Java 8 -->
       <!-- Shaded JAR assembly -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -105,7 +104,6 @@
             </goals>
             <configuration>
               <sourceDirs>
-                <source>src/main/java</source>
                 <source>src/main/kotlin</source>
               </sourceDirs>
             </configuration>
@@ -118,31 +116,6 @@
             </goals>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.6.1</version>
-        <executions>
-          <execution>
-            <id>compile</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>compile</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>testCompile</id>
-            <phase>test-compile</phase>
-            <goals>
-              <goal>testCompile</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
-        </configuration>
       </plugin>
     </plugins>
   </build>
@@ -170,12 +143,6 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.projectlombok</groupId>
-      <artifactId>lombok</artifactId>
-      <version>1.16.16</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>org.shredzone.acme4j</groupId>
       <artifactId>acme4j-client</artifactId>
       <version>0.10</version>
@@ -189,16 +156,6 @@
       <groupId>dnsjava</groupId>
       <artifactId>dnsjava</artifactId>
       <version>2.1.8</version>
-    </dependency>
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>21.0</version>
-    </dependency>
-    <dependency>
-      <groupId>io.javaslang</groupId>
-      <artifactId>javaslang</artifactId>
-      <version>2.0.5</version>
     </dependency>
     <dependency>
       <groupId>com.google.cloud</groupId>
@@ -253,6 +210,5 @@
       <artifactId>funktionale-option</artifactId>
       <version>1.0.1</version>
     </dependency>
-
   </dependencies>
 </project>
