@@ -9,7 +9,6 @@ buildscript {
 }
 
 apply {
-    plugin("application")
     plugin("kotlin")
 }
 
