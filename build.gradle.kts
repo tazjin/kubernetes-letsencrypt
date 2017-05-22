@@ -13,13 +13,13 @@ apply {
     plugin("kotlin")
 }
 
+version = "1.7-SNAPSHOT"
+group = "in.tazj.k8s"
+
 repositories {
     mavenCentral()
     jcenter()
 }
-
-version = "1.7-SNAPSHOT"
-group = "in.tazj.k8s"
 
 dependencies {
     compile(kotlinModule("stdlib"))

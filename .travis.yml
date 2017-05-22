@@ -1,6 +1,6 @@
 language: java
 script:
-   - 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then mvn package; fi'
+   - 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then ./gradlew test; fi'
    - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then mvn package docker:build docker:push; fi'
 sudo: required
 services:
