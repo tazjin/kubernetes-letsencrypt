@@ -4,10 +4,10 @@ import com.amazonaws.services.route53.AmazonRoute53Client
 import com.amazonaws.services.route53.model.HostedZone
 import com.amazonaws.services.route53.model.ListHostedZonesResult
 import com.google.common.collect.ImmutableList
+import com.nhaarman.mockito_kotlin.doReturn
+import com.nhaarman.mockito_kotlin.mock
 import org.junit.Assert
 import org.junit.Test
-import org.mockito.Mockito
-
 
 class Route53ResponderTest {
     @Test
@@ -18,10 +18,9 @@ class Route53ResponderTest {
                 HostedZone("incorrect-2", "other.tazj.in.", "")
         )
 
-        val client = Mockito.mock(AmazonRoute53Client::class.java)
-
-        Mockito.`when`(client.listHostedZones())
-                .thenReturn(ListHostedZonesResult().withHostedZones(testList))
+        val client: AmazonRoute53Client = mock {
+            on { listHostedZones() } doReturn (ListHostedZonesResult().withHostedZones(testList))
+        }
 
         val responder = Route53Responder(client)
         val testRecord = "_acme-challenge.some.test.tazj.in"
