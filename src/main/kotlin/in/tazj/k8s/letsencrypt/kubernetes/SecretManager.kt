@@ -24,7 +24,7 @@ class SecretManager(val client: KubernetesClient) {
         return client.secrets().inNamespace(namespace)
                 .list().items
                 .filter { it.metadata.name == secretName }
-                .last().toOption()
+                .lastOrNull().toOption()
     }
 
     /**

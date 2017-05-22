@@ -24,7 +24,7 @@ class KeyPairManager(val keyPair: KeyPair) {
         fun getKeyPairFromCluster(client: KubernetesClient): Option<KeyPair> {
             val secret = client.secrets().inNamespace(SYSTEM_NAMESPACE).list().items
                     .filter { it.metadata.name == SECRET_NAME }
-                    .last().toOption()
+                    .lastOrNull().toOption()
 
             return secret.map {
                 val decodedKeyPair = String(BASE64.decode(it.data[KEYPAIR_FIELD]))
