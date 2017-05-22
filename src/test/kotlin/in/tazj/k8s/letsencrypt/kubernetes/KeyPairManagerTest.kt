@@ -2,6 +2,7 @@ package `in`.tazj.k8s.letsencrypt.kubernetes
 
 import com.google.common.collect.ImmutableMap
 import com.google.common.io.BaseEncoding
+import com.nhaarman.mockito_kotlin.*
 import io.fabric8.kubernetes.api.model.DoneableSecret
 import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.Secret
@@ -11,8 +12,6 @@ import io.fabric8.kubernetes.client.dsl.MixedOperation
 import io.fabric8.kubernetes.client.dsl.Resource
 import org.junit.Assert
 import org.junit.Test
-import org.mockito.Mock
-import org.mockito.Mockito
 import org.shredzone.acme4j.util.KeyPairUtils
 import java.io.StringWriter
 
@@ -20,13 +19,20 @@ import java.io.StringWriter
 class KeyPairManagerTest {
     private val BASE64 = BaseEncoding.base64()
 
-    @Mock
-    lateinit var mockOperation:
-            MixedOperation<Secret, SecretList, DoneableSecret, Resource<Secret, DoneableSecret>>
+    val mockOperation: MixedOperation<Secret, SecretList, DoneableSecret,
+            Resource<Secret, DoneableSecret>> = mock()
+
+    val client: KubernetesClient
+
+    init {
+        client = mock {
+            on { secrets() } doReturn mockOperation
+        }
+    }
 
     @Test
     fun testNoKeypairInCluster() {
-        val client = getMockClient(listOf());
+        prepareMockOperation(listOf())
         val keyPair = KeyPairManager.getKeyPairFromCluster(client)
 
         Assert.assertFalse("No keypair found in cluster", keyPair.isDefined());
@@ -35,8 +41,9 @@ class KeyPairManagerTest {
     @Test
     fun testKeyPairInCluster() {
         // Prepare mock metadata
-        val metadata = Mockito.mock(ObjectMeta::class.java)
-        Mockito.`when`(metadata.name).thenReturn("letsencrypt-keypair")
+        val metadata: ObjectMeta = mock {
+            on { name } doReturn ("letsencrypt-keypair")
+        }
 
         // Generate test keypair
         val keypair = KeyPairUtils.createKeyPair(2048)
@@ -47,12 +54,13 @@ class KeyPairManagerTest {
         val data = ImmutableMap.of("keypair", BASE64.encode(writer.toString().toByteArray()))
 
         // Prepare mock secret
-        val secret = Mockito.mock(Secret::class.java)
-        Mockito.`when`(secret.metadata).thenReturn(metadata)
-        Mockito.`when`(secret.data).thenReturn(data)
+        val secret: Secret = mock {
+            on { getMetadata() } doReturn (metadata)
+            on { getData() } doReturn (data)
+        }
+        prepareMockOperation(listOf(secret))
 
         // Run test
-        val client = getMockClient(listOf(secret))
         val testKeyPair = KeyPairManager.getKeyPairFromCluster(client)
 
         Assert.assertTrue("Test key pair found", testKeyPair.isDefined())
@@ -60,15 +68,11 @@ class KeyPairManagerTest {
                 keypair.public, testKeyPair.get().public)
     }
 
-    private fun getMockClient(secretList: List<Secret>): KubernetesClient {
-        val kubeClient = Mockito.mock(KubernetesClient::class.java)
-        Mockito.`when`(kubeClient.secrets()).thenReturn(mockOperation)
-
+    private fun prepareMockOperation(secretList: List<Secret>) {
+        reset(mockOperation)
         val testList = SecretList()
         testList.items = secretList
-        Mockito.`when`(mockOperation.list()).thenReturn(testList)
-        Mockito.`when`(mockOperation.inNamespace(Mockito.anyString())).thenReturn(mockOperation)
-
-        return kubeClient
+        whenever(mockOperation.list()).thenReturn(testList)
+        whenever(mockOperation.inNamespace(any())).thenReturn(mockOperation)
     }
 }
