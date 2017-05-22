@@ -22,14 +22,13 @@ import java.time.LocalDate
 
 
 class ServiceManagerTest {
-    private lateinit var serviceManager: ServiceManager
+    private val serviceManager: ServiceManager
     private val EXISTING_CERT = "existing-k8s-io-tls"
     private val RENEWAL_CERT = "renewal-k8s-io-tls"
     private val CUSTOM_NAME = "customSecretName"
     private val MISMATCH_SECRET = "mismatchSecret"
 
-    @Before
-    fun setup() {
+    init {
         val secretManager = getMockedSecretManager()
         val requestHandler: CertificateRequestHandler = mock()
 
@@ -42,10 +41,10 @@ class ServiceManagerTest {
         val mismatchSecret = prepareDomainMismatchSecret()
 
         val secretManager: SecretManager = mock {
+            on { getSecret(any(), any()) } doReturn (Option.None)
             on { getSecret(eq("default"), eq(EXISTING_CERT)) } doReturn (existingSecret)
             on { getSecret(eq("default"), eq(RENEWAL_CERT)) } doReturn (renewalSecret)
             on { getSecret(eq("default"), eq(MISMATCH_SECRET)) } doReturn (mismatchSecret)
-            on { getSecret(any(), any()) } doReturn (Option.None)
         }
 
         return secretManager
