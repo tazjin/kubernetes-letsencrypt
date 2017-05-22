@@ -107,11 +107,11 @@ class CloudDnsResponder(private val dns: Dns) : DnsResponder {
      */
     private fun fetchMatchingZones(recordName: String): List<Zone> {
         val fqdnRecord = determineFqdnRecord(recordName)
-        val zoneList: List<Zone> = mutableListOf()
+        var zoneList: List<Zone> = mutableListOf()
 
         dns.listZones().iterateAll().forEachRemaining { zone ->
             if (fqdnRecord.contains(zone.dnsName)) {
-                zoneList.plus(zone)
+                zoneList = zoneList.plus(zone)
             }
         }
 
