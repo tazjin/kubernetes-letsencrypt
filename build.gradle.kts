@@ -44,4 +44,5 @@ dependencies {
     // Test dependencies
     testCompile("junit", "junit", "4.12")
     testCompile("org.mockito", "mockito-core", "2.8.9")
+    testCompile("com.nhaarman", "mockito-kotlin", "1.4.0")
 }
