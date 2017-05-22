@@ -1,11 +1,14 @@
 package `in`.tazj.k8s.letsencrypt.kubernetes
 
 import `in`.tazj.k8s.letsencrypt.acme.CertificateRequestHandler
-import `in`.tazj.k8s.letsencrypt.kubernetes.SecretManager
 import `in`.tazj.k8s.letsencrypt.model.CertificateRequest
 import `in`.tazj.k8s.letsencrypt.model.EXPIRY_ANNOTATION
 import `in`.tazj.k8s.letsencrypt.model.REQUEST_ANNOTATION
 import `in`.tazj.k8s.letsencrypt.model.SECRET_NAME_ANNOTATION
+import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.doReturn
+import com.nhaarman.mockito_kotlin.eq
+import com.nhaarman.mockito_kotlin.mock
 import io.fabric8.kubernetes.api.model.ObjectMeta
 import io.fabric8.kubernetes.api.model.Secret
 import io.fabric8.kubernetes.api.model.Service
@@ -15,10 +18,6 @@ import org.hamcrest.CoreMatchers.hasItems
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
-import org.mockito.Matchers.anyString
-import org.mockito.Matchers.eq
-import org.mockito.Mockito
-import org.mockito.Mockito.`when`
 import java.time.LocalDate
 
 
@@ -32,7 +31,7 @@ class ServiceManagerTest {
     @Before
     fun setup() {
         val secretManager = getMockedSecretManager()
-        val requestHandler = Mockito.mock(CertificateRequestHandler::class.java)
+        val requestHandler: CertificateRequestHandler = mock()
 
         serviceManager = ServiceManager("default", secretManager, requestHandler)
     }
@@ -42,23 +41,27 @@ class ServiceManagerTest {
         val renewalSecret = prepareRenewalSecret()
         val mismatchSecret = prepareDomainMismatchSecret()
 
-        val secretManager = Mockito.mock(SecretManager::class.java)
-        `when`(secretManager.getSecret(anyString(), anyString())).thenReturn(Option.None)
-        `when`(secretManager.getSecret(eq("default"), eq(EXISTING_CERT))).thenReturn(existingSecret)
-        `when`(secretManager.getSecret(eq("default"), eq(RENEWAL_CERT))).thenReturn(renewalSecret)
-        `when`(secretManager.getSecret(eq("default"), eq(MISMATCH_SECRET))).thenReturn(mismatchSecret)
+        val secretManager: SecretManager = mock {
+            on { getSecret(eq("default"), eq(EXISTING_CERT)) } doReturn (existingSecret)
+            on { getSecret(eq("default"), eq(RENEWAL_CERT)) } doReturn (renewalSecret)
+            on { getSecret(eq("default"), eq(MISMATCH_SECRET)) } doReturn (mismatchSecret)
+            on { getSecret(any(), any()) } doReturn (Option.None)
+        }
+
         return secretManager
     }
 
     /** Prepare a plain, mocked secret for an existing certificate.  */
     private fun prepareExistingSecret(): Option<Secret> {
         val annotations = mapOf(REQUEST_ANNOTATION to "[\"existing.k8s.io\"]")
-        val secretMeta = Mockito.mock(ObjectMeta::class.java)
-        `when`(secretMeta.name).thenReturn(EXISTING_CERT)
-        `when`(secretMeta.annotations).thenReturn(annotations)
+        val secretMeta: ObjectMeta = mock {
+            on { name } doReturn (EXISTING_CERT)
+            on { getAnnotations() } doReturn (annotations)
+        }
 
-        val secret = Mockito.mock(Secret::class.java)
-        `when`(secret.metadata).thenReturn(secretMeta)
+        val secret: Secret = mock {
+            on { metadata } doReturn (secretMeta)
+        }
 
         return secret.toOption()
     }
@@ -67,12 +70,15 @@ class ServiceManagerTest {
     private fun prepareRenewalSecret(): Option<Secret> {
         val expiryDate = LocalDate.now().minusDays(1)
         val annotations = mapOf(EXPIRY_ANNOTATION to expiryDate.toString())
-        val secretMeta = Mockito.mock(ObjectMeta::class.java)
-        `when`(secretMeta.name).thenReturn(RENEWAL_CERT)
-        `when`(secretMeta.annotations).thenReturn(annotations)
 
-        val secret = Mockito.mock(Secret::class.java)
-        `when`(secret.metadata).thenReturn(secretMeta)
+        val secretMeta: ObjectMeta = mock {
+            on { name } doReturn (RENEWAL_CERT)
+            on { getAnnotations() } doReturn (annotations)
+        }
+
+        val secret: Secret = mock {
+            on { metadata } doReturn (secretMeta)
+        }
 
         return secret.toOption()
     }
@@ -83,22 +89,28 @@ class ServiceManagerTest {
                 REQUEST_ANNOTATION to "[\"test1.k8s.io\", \"test3.k8s.io\"]"
         )
 
-        val secretMeta = Mockito.mock(ObjectMeta::class.java)
-        `when`(secretMeta.name).thenReturn(MISMATCH_SECRET)
-        `when`(secretMeta.annotations).thenReturn(annotations)
+        val secretMeta: ObjectMeta = mock {
+            on { name } doReturn (MISMATCH_SECRET)
+            on { getAnnotations() } doReturn (annotations)
+        }
 
-        val secret = Mockito.mock(Secret::class.java)
-        `when`(secret.metadata).thenReturn(secretMeta)
+        val secret: Secret = mock {
+            on { metadata } doReturn (secretMeta)
+        }
 
         return secret.toOption()
     }
 
     private fun createTestRequest(annotations: Map<String, String>): Option<CertificateRequest> {
-        val testMetadata = Mockito.mock(ObjectMeta::class.java)
-        `when`(testMetadata.annotations).thenReturn(annotations)
-        `when`(testMetadata.name).thenReturn("testService")
-        val testService = Mockito.mock(Service::class.java)
-        `when`(testService.getMetadata()).thenReturn(testMetadata)
+        val testMetadata: ObjectMeta = mock {
+            on { getAnnotations() } doReturn (annotations)
+            on { name } doReturn ("testService")
+        }
+
+        val testService: Service = mock {
+            on { metadata } doReturn (testMetadata)
+        }
+
         return serviceManager.prepareCertificateRequest(testService)
     }
 
@@ -113,7 +125,7 @@ class ServiceManagerTest {
         assertFalse("Request is not a renewal", request.get().renew)
         assertEquals("Request secret name matches", expectedSecret, request.get().secretName)
         assertEquals("One domain is included", 1, request.get().domains.size)
-        assertEquals("Request domain name matches", testDomain, request.get().domains.get(0))
+        assertEquals("Request domain name matches", testDomain, request.get().domains[0])
     }
 
     @Test
