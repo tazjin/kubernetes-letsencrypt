@@ -1,4 +1,5 @@
 buildscript {
+
     repositories {
         gradleScriptKotlin()
     }
@@ -8,14 +9,27 @@ buildscript {
     }
 }
 
+plugins {
+    application
+}
+
 apply {
     plugin("kotlin")
+}
+
+application {
+    mainClassName = "samples.HelloWorldKt"
+}
+
+dependencies {
+    compile(kotlinModule("stdlib"))
 }
 
 version = "1.7-SNAPSHOT"
 group = "in.tazj.k8s"
 
 repositories {
+    gradleScriptKotlin()
     mavenCentral()
     jcenter()
 }
