@@ -9,16 +9,13 @@ buildscript {
     }
 }
 
-plugins {
-    application
-}
-
 apply {
     plugin("kotlin")
+    plugin("application")
 }
 
-application {
-    mainClassName = "samples.HelloWorldKt"
+configure<ApplicationPluginConvention> {
+    mainClassName = "in.tazj.k8s.letsencrypt.MainKt"
 }
 
 dependencies {
