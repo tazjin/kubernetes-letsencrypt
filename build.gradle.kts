@@ -1,3 +1,6 @@
+import com.bmuschko.gradle.docker.DockerExtension
+import com.bmuschko.gradle.docker.DockerJavaApplication
+
 buildscript {
 
     repositories {
@@ -6,24 +9,33 @@ buildscript {
 
     dependencies {
         classpath(kotlinModule("gradle-plugin"))
+        classpath("com.bmuschko:gradle-docker-plugin:3.0.8")
     }
 }
 
 apply {
     plugin("kotlin")
     plugin("application")
+    plugin("com.bmuschko.docker-java-application")
 }
+
+version = "1.7-SNAPSHOT"
+group = "in.tazj.k8s"
 
 configure<ApplicationPluginConvention> {
     mainClassName = "in.tazj.k8s.letsencrypt.MainKt"
 }
 
+configure<DockerExtension> {
+    with(getProperty("javaApplication") as DockerJavaApplication) {
+        baseImage = "java:8"
+        tag = "tazjin/letsencrypt-controller:${version}"
+    }
+}
+
 dependencies {
     compile(kotlinModule("stdlib"))
 }
-
-version = "1.7-SNAPSHOT"
-group = "in.tazj.k8s"
 
 repositories {
     gradleScriptKotlin()
