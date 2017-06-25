@@ -119,6 +119,12 @@ mvn package
 mvn -Ddocker.imageName='your/image-name' docker:build docker:push
 ```
 
+## Contributing
+
+Feel free to contribute pull requests, file bugs and open issues with feature suggestions!
+
+Please follow the [code of conduct](CODE_OF_CONDUCT.md).
+
 [kube2iam]: https://github.com/jtblin/kube2iam
 [mount these]: http://kubernetes.io/docs/user-guide/secrets/#using-secrets-as-files-from-a-pod
 [Google Cloud Java SDK]: https://github.com/GoogleCloudPlatform/google-cloud-java#authentication
