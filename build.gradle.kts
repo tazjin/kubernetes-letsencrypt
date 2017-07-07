@@ -5,11 +5,13 @@ buildscript {
 
     repositories {
         gradleScriptKotlin()
+        jcenter()
     }
 
     dependencies {
         classpath(kotlinModule("gradle-plugin"))
         classpath("com.bmuschko:gradle-docker-plugin:3.0.8")
+        classpath("com.github.ben-manes:gradle-versions-plugin:0.15.0")
     }
 }
 
@@ -17,6 +19,7 @@ apply {
     plugin("kotlin")
     plugin("application")
     plugin("com.bmuschko.docker-java-application")
+    plugin("com.github.ben-manes.versions")
 }
 
 version = "1.7-SNAPSHOT"
