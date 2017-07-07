@@ -75,7 +75,7 @@ class Route53Responder(val route53: AmazonRoute53) : DnsResponder {
                     } else if (zone.name == acc.name) {
                         log.debug("Both zones {} and {} are the same length, " +
                                 "checking if private", zone.id, acc.id)
-                        // If equal in size and 'zone' is not private, use that,
+                        // If equal and 'zone' is not private, use that,
                         // else default back to 'acc' (normal behavior).
                         if( !zone.config.isPrivateZone) {
                             log.debug("Zone {} is public, using it", zone.id)
