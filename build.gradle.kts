@@ -22,7 +22,7 @@ apply {
     plugin("com.github.ben-manes.versions")
 }
 
-version = "1.7-SNAPSHOT"
+version = "1.8-SNAPSHOT"
 group = "in.tazj.k8s"
 
 configure<ApplicationPluginConvention> {
