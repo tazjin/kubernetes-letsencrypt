@@ -107,7 +107,8 @@ class CertificateRequestHandler(
         CertificateUtils.writeX509Certificate(downloadedCertificate, certWriter)
 
         val chainWriter = StringWriter()
-        CertificateUtils.writeX509CertificateChain(certificate.downloadChain(), chainWriter)
+        val downloadedChain = certificate.downloadChain()
+        CertificateUtils.writeX509CertificateChain(chainWriter, downloadedCertificate, *downloadedChain)
 
         val keyWriter = StringWriter()
         KeyPairUtils.writeKeyPair(domainKeyPair, keyWriter)
