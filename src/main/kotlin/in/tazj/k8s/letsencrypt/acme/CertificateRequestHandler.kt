@@ -177,9 +177,9 @@ class CertificateRequestHandler(
         val observer = DnsRecordObserver(challengeRecord, rootZone, dns01Challenge.digest)
         observer.observeDns()
 
-        val cleanup: Runnable = {
+        val cleanup: Runnable = Runnable {
             dnsResponder.removeChallengeRecord(challengeRecord, dns01Challenge.digest)
-        } as Runnable
+        }
 
         return Pair(dns01Challenge, cleanup)
     }
