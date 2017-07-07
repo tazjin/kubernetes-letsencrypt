@@ -45,6 +45,7 @@ repositories {
 
 dependencies {
     compile(kotlinModule("stdlib"))
+    compile(kotlinModule("reflect"))
     compile("io.fabric8", "kubernetes-client", "2.2.13")
     compile("com.google.code.gson", "gson", "2.8.0")
     compile("com.amazonaws", "aws-java-sdk-route53", "1.11.119") {
