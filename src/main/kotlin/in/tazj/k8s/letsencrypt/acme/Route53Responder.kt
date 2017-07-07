@@ -68,6 +68,9 @@ class Route53Responder(val route53: AmazonRoute53) : DnsResponder {
         val fqdnRecord = determineFqdnRecord(record)
         // Attempt to find the correct hosted zone by matching the longest matching suffix.
         val matchingZone = route53.listHostedZones().hostedZones
+                // Filter out private zones to prevent the controller from writing into the wrong zone in a split-brain
+                // DNS setup.
+                .filter { !it.config.isPrivateZone }
                 .filter { fqdnRecord.endsWith(it.name) }
                 .reduce { acc, zone ->
                     if (zone.name.length > acc.name.length) {
