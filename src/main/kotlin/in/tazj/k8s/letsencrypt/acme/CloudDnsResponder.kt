@@ -34,11 +34,11 @@ class CloudDnsResponder(private val dns: Dns) : DnsResponder {
     }
 
     private fun waitForUpdate(result: ChangeRequest) {
-        var result = result
+        var modifiableResult = result
         log.info("Waiting for change in zone {} to finish. This may take some time.", result.zone)
-        while (result.status() == PENDING) {
+        while (modifiableResult.status() == PENDING) {
             Thread.sleep(500)
-            result = dns.getChangeRequest(result.zone, result.generatedId)
+            modifiableResult = dns.getChangeRequest(result.zone, result.generatedId)
         }
 
         // Cloud DNS sometimes takes a while even after propagation has been confirmed.
