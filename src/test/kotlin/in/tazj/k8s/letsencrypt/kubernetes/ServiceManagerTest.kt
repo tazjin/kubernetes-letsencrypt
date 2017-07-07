@@ -27,6 +27,7 @@ class ServiceManagerTest {
     private val RENEWAL_CERT = "renewal-k8s-io-tls"
     private val CUSTOM_NAME = "customSecretName"
     private val MISMATCH_SECRET = "mismatchSecret"
+    private val REMOVED_CERT = "removed-k8s-io-tls"
 
     init {
         val secretManager = getMockedSecretManager()
@@ -39,12 +40,14 @@ class ServiceManagerTest {
         val existingSecret = prepareExistingSecret()
         val renewalSecret = prepareRenewalSecret()
         val mismatchSecret = prepareDomainMismatchSecret()
+        val removedSecret = prepareDomainRemovedSecret()
 
         val secretManager: SecretManager = mock {
             on { getSecret(any(), any()) } doReturn (Option.None)
             on { getSecret(eq("default"), eq(EXISTING_CERT)) } doReturn (existingSecret)
             on { getSecret(eq("default"), eq(RENEWAL_CERT)) } doReturn (renewalSecret)
             on { getSecret(eq("default"), eq(MISMATCH_SECRET)) } doReturn (mismatchSecret)
+            on { getSecret(eq("default"), eq(REMOVED_CERT)) } doReturn (removedSecret)
         }
 
         return secretManager
@@ -90,6 +93,24 @@ class ServiceManagerTest {
 
         val secretMeta: ObjectMeta = mock {
             on { name } doReturn (MISMATCH_SECRET)
+            on { getAnnotations() } doReturn (annotations)
+        }
+
+        val secret: Secret = mock {
+            on { metadata } doReturn (secretMeta)
+        }
+
+        return secret.toOption()
+    }
+
+    /** Prepare a mocked secret with a domain that has been removed */
+    private fun prepareDomainRemovedSecret(): Option<Secret> {
+        val annotations = mapOf(
+                REQUEST_ANNOTATION to "[\"test1.k8s.io\", \"removed.k8s.io\"]"
+        )
+
+        val secretMeta: ObjectMeta = mock {
+            on { name } doReturn (REMOVED_CERT)
             on { getAnnotations() } doReturn (annotations)
         }
 
@@ -195,4 +216,18 @@ class ServiceManagerTest {
                 hasItems("test1.k8s.io", "test2.k8s.io"))
     }
 
+    @Test
+    fun testDomainRemovedCausesRenewal() {
+        val testDomains = "[\"test1.k8s.io\"]"
+        val annotations = mapOf (
+                REQUEST_ANNOTATION to testDomains,
+                SECRET_NAME_ANNOTATION to REMOVED_CERT
+        )
+        val request = createTestRequest(annotations)
+
+        assertTrue("A certificate is requested", request.isDefined())
+        assertTrue("Certificate is a renewal", request.get().renew)
+        assertEquals("One domain is included", 1, request.get().domains.size)
+        assertThat("Included domain matches", request.get().domains, hasItems("test1.k8s.io"))
+    }
 }

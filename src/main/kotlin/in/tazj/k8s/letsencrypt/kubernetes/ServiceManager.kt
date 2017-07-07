@@ -121,7 +121,7 @@ class ServiceManager(
     }
 
     /**
-     * Checks if a given service resource is requesting a Letsencrypt certificate.
+     * Checks if a given service resource is requesting a Let's Encrypt certificate.
      */
     private fun isCertificateRequest(service: Service): Boolean {
         val annotations = service.metadata.annotations

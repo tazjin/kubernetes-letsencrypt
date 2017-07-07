@@ -114,7 +114,7 @@ class SecretManager(val client: KubernetesClient) {
                     .map {
                         val type = object : TypeToken<List<String>>() {}.type
                         val secretDomains: List<String> = gson.fromJson(it, type)
-                        !secretDomains.containsAll(domains)
+                        (secretDomains.size != domains.size) || !secretDomains.containsAll(domains)
                     }
                     .getOrElse {
                         log.warn("acme/certificate annotation missing on secret {}!", secret.metadata.name)
