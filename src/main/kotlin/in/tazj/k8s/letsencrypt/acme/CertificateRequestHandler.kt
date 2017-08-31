@@ -185,6 +185,7 @@ class CertificateRequestHandler(
         return Pair(dns01Challenge, cleanup)
     }
 
+    @Synchronized
     private fun getRegistration(): Registration {
         val session = Session(acmeServer, keyPairManager.keyPair)
         var registration: Registration
