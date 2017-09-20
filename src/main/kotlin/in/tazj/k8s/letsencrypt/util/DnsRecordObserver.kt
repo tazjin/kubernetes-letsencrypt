@@ -28,6 +28,10 @@ class DnsRecordObserver(private val recordName: String, private val rootZone: St
                     .map({ it.rdataToString() })
                     .forEach({ this.waitWithNameserver(it) })
 
+            if (nameservers.isEmpty()) {
+                log.info("No NS records found for '{}'", rootZone)
+            }
+
         } catch (e: TextParseException) {
             e.printStackTrace()
         }
@@ -73,6 +77,9 @@ class DnsRecordObserver(private val recordName: String, private val rootZone: St
     private fun findAuthoritativeNameservers(): List<Record> {
         val lookup = Lookup(rootZone, Type.NS)
         val records = lookup.run()
-        return ImmutableList.copyOf(records)
+        if (records != null) {
+            return ImmutableList.copyOf(records)
+        }
+        return emptyList()
     }
 }
