@@ -10,7 +10,7 @@ buildscript {
 
     dependencies {
         classpath(kotlinModule("gradle-plugin"))
-        classpath("com.bmuschko:gradle-docker-plugin:3.0.9")
+        classpath("com.bmuschko:gradle-docker-plugin:3.2.2")
         classpath("com.github.ben-manes:gradle-versions-plugin:0.15.0")
     }
 }
