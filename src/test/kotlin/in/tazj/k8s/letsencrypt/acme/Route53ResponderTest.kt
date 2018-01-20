@@ -58,4 +58,18 @@ class Route53ResponderTest {
         Assert.assertTrue("A hosted zone is found", result.isDefined())
         Assert.assertEquals("The selected hosted zone is correct", "public", result.get().id)
     }
+
+    @Test
+    fun testNoZonesAvailable() {
+        val testList = emptyList<HostedZone>()
+        val client: AmazonRoute53Client = mock {
+            on { listHostedZones() } doReturn (ListHostedZonesResult().withHostedZones(testList))
+        }
+
+        val responder = Route53Responder(client)
+        val testRecord = "_acme-challenge.some.test.tazj.in"
+        val result = responder.findHostedZone(testRecord)
+
+        Assert.assertTrue("No hosted zone is found", result.isEmpty())
+    }
 }

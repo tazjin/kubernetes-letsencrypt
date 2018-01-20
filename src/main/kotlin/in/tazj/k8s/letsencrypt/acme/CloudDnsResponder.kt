@@ -92,7 +92,13 @@ class CloudDnsResponder(private val dns: Dns) : DnsResponder {
      * Determine the most specific matching zone from available Cloud DNS zones.
      */
     fun findMatchingZone(recordName: String): Option<Zone> {
-        return fetchMatchingZones(recordName)
+        val zones = fetchMatchingZones(recordName)
+
+        if (zones.isEmpty()) {
+            return Option.None
+        }
+
+        return zones
                 .reduce { acc, zone ->
                     if (zone.dnsName.length > acc.dnsName.length) {
                         zone
