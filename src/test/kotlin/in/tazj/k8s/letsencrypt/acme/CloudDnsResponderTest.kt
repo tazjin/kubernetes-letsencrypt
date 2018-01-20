@@ -35,6 +35,25 @@ class CloudDnsResponderTest {
         Assert.assertEquals("Correct zone is found", "correct", result.get().name)
     }
 
+    @Test
+    fun testNoZonesAvailable() {
+        val iterator = emptyList<Zone>().iterator()
+        val page: Page<Zone> = mock {
+            on { iterateAll() } doReturn (iterator)
+        }
+
+        val dns: Dns = mock {
+            on { listZones() } doReturn (page)
+        }
+
+        val responder = CloudDnsResponder(dns)
+        val testRecord = "_acme-challenge.some.test.tazj.in"
+
+        val result = responder.findMatchingZone(testRecord)
+
+        Assert.assertTrue("No zone is returned", result.isEmpty())
+    }
+
     private fun zoneOf(name: String, dnsName: String): Zone {
         return mock {
             on { getName() } doReturn (name)
