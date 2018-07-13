@@ -55,8 +55,8 @@ dependencies {
         // Prevent AWS SDK from dragging in unwanted (unstructured) logging
         exclude(group = "commons-logging")
     }
-    compile("org.shredzone.acme4j", "acme4j-client", "0.10")
-    compile("org.shredzone.acme4j", "acme4j-utils", "0.10")
+    compile("org.shredzone.acme4j", "acme4j-client", "1.0")
+    compile("org.shredzone.acme4j", "acme4j-utils", "1.0")
     compile("dnsjava", "dnsjava", "2.1.8")
     compile("com.google.cloud", "google-cloud-dns", "0.8.0")
     compile("org.funktionale", "funktionale-option", "1.1")
