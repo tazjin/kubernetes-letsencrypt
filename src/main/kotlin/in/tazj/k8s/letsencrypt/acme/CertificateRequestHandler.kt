@@ -149,7 +149,8 @@ class CertificateRequestHandler(
         }
 
         if (challenge.status == Status.INVALID) {
-            log.error("Challenge {} failed", challenge.location)
+            log.error("Challenge {} failed: {}:'{}'", challenge.location, challenge.error.type,
+                    challenge.error.detail)
             throw LetsencryptException("Failed due to invalid challenge")
         }
 
