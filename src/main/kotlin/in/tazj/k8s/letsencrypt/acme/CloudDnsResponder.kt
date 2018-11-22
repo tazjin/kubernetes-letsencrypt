@@ -72,7 +72,7 @@ class CloudDnsResponder(private val dns: Dns) : DnsResponder {
 
         if (changeType == ADD) {
             // Verify there is no existing record / overwrite it if there is.
-            val recordSetIterator = zone.listRecordSets().iterateAll()
+            val recordSetIterator = zone.listRecordSets().iterateAll().iterator()
             while (recordSetIterator.hasNext()) {
                 val current = recordSetIterator.next()
                 if (recordSet.name == current.name && recordSet.type == current.type) {
@@ -115,7 +115,7 @@ class CloudDnsResponder(private val dns: Dns) : DnsResponder {
         val fqdnRecord = determineFqdnRecord(recordName)
         var zoneList: List<Zone> = mutableListOf()
 
-        dns.listZones().iterateAll().forEachRemaining { zone ->
+        dns.listZones().iterateAll().forEach { zone ->
             if (fqdnRecord.contains(zone.dnsName)) {
                 zoneList = zoneList.plus(zone)
             }

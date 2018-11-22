@@ -1,6 +1,6 @@
 package `in`.tazj.k8s.letsencrypt.acme
 
-import com.google.cloud.Page
+import com.google.api.gax.paging.Page
 import com.google.cloud.dns.Dns
 import com.google.cloud.dns.Zone
 import com.nhaarman.mockito_kotlin.doReturn
